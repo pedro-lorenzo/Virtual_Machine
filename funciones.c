@@ -17,15 +17,40 @@ void iniciaEstructuras(Cabecera cabecera, tSegmento segmentos, TablaRegistros re
     registros[0]=registros[26]; //Inicializamos IP con CS
 }
 
-int cantidadOperandosALeer(int codigo){
-    int aux;
 
-    switch codigo:
-        0X0F: return 0;
-                break;
-        else{
-            aux= codigo & 0xF0;
-            aux >> 4
-            return aux + 1;
-        }
+int cantidadOperandosALeer(int codigo) {
+    if (codigo == 0x0F) 
+        return 0;
+    else
+        return ((codigo & 0xF0) >> 4) + 1;
+}
+
+int direccionLogicaAFisica(unsigned int direccionLogica, tSegmento segmentos) {
+    unsigned int codigoSegmento;
+    unsigned int desplazamiento;
+    int segmento;
+    unsigned int base;
+    unsigned int tamano;
+
+    codigoSegmento = direccionLogica >> 16;
+    desplazamiento = direccionLogica & 0xFFFF;
+
+    if (codigoSegmento >= CANT_SEGMENTOS) {
+        return -1;
+    }
+
+    segmento = segmentos[codigoSegmento];
+
+    if (segmento == -1) {
+        return -1;
+    }
+
+    base = ((unsigned int)segmento) >> 16;
+    tamano = ((unsigned int)segmento) & 0xFFFF;
+
+    if (desplazamiento >= tamano) {
+        return -1;
+    }
+
+    return (int)(base + desplazamiento);
 }

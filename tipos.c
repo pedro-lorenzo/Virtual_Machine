@@ -4,25 +4,25 @@
 #define MAX_IDENTIFICADOR 5
 
 typedef struct {
-    char datos[TAM_MEMORIA];
+    unsigned char datos[TAM_MEMORIA];
 } Memoria;
 
 typedef int tSegmento[CANT_SEGMENTOS];
 
 
 typedef struct {
-    int  registros[CANT_REGISTROS]; // 4 bytes cada uno
+    unsigned int  registros[CANT_REGISTROS]; // 4 bytes cada uno
 } TablaRegistros;
 
 typedef struct {
     Memoria memoria;
-    TablaSegmentos tabla_segmentos;
+    tSegmento tabla_segmentos;
     TablaRegistros registros;
     int corriendo; // 1 = sigue ejecutando, 0 = terminó (STOP o error)
 } MaquinaVirtual;
 
 typedef struct{
     char identificador[MAX_IDENTIFICADOR];
-    char version;
-    short tamano;
+    unsigned char version;
+    unsigned short tamano;
 }Cabecera;
