@@ -9,14 +9,14 @@ typedef struct {
 
 typedef int tSegmento[CANT_SEGMENTOS];
 
-
 typedef struct {
     int  registros[CANT_REGISTROS]; // 4 bytes cada uno
 } TablaRegistros;
 
+
 typedef struct {
     Memoria memoria;
-    TablaSegmentos tabla_segmentos;
+    tSegmento tabla_segmentos;
     TablaRegistros registros;
     int corriendo; // 1 = sigue ejecutando, 0 = terminó (STOP o error)
 } MaquinaVirtual;

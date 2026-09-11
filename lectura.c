@@ -6,22 +6,20 @@ int main (){
     FILE *file;
     file = fopen("kwbv", "rb");
     Cabecera Cabecera;
-    Memoria memoria;
-    tSegmento segmento;
-    TablaRegistros registros;
+    MaquinaVirtual vm;
 
     if (file != NULL){
         fread(&Cabecera, 1, sizeof(Cabecera), file);
         if (strcmp(Cabecera.identificador, "VMX26") && Cabecera.version == 1){
             for (int i = 0; i < Cabecera.tamano; i++){
-                fread(&memoria.datos[i], 1, sizeof(char), file);
+                fread(&vm.memoria.datos[i], 1, sizeof(char), file);
             }
             fclose(file);
-            iniciaEstructuras(cabecera, segmento, registros);
+            iniciaMaquinaVirtual(Cabecera,vm.segmentos,&vm.registros);
         }
     }
 
-    procesaPrograma(memoria, registros, segmento);
+    procesaPrograma(&vm);
 
     return 0;
 }
