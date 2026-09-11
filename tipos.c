@@ -7,19 +7,12 @@ typedef struct {
     char datos[TAM_MEMORIA];
 } Memoria;
 
-typedef struct {
-    short base;   // 2 bytes
-    short tamano; // 2 bytes
-} DescriptorSegmento;
-
-typedef struct {
-    DescriptorSegmento segmentos[CANT_SEGMENTOS];
-} TablaSegmentos;
+typedef int tSegmento[CANT_SEGMENTOS];
 
 
 typedef struct {
     int  registros[CANT_REGISTROS]; // 4 bytes cada uno
-} Registro;
+} TablaRegistros;
 
 typedef struct {
     Memoria memoria;
