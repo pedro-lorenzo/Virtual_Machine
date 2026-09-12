@@ -1,3 +1,6 @@
+#ifndef TIPOS_H
+#define TIPOS_H
+
 #define TAM_MEMORIA 16384
 #define CANT_REGISTROS 32
 #define CANT_SEGMENTOS 8
@@ -7,10 +10,10 @@ typedef struct {
     unsigned char datos[TAM_MEMORIA];
 } Memoria;
 
+/* Es signed porque los segmentos no utilizados se representan con -1. */
 typedef int tSegmento[CANT_SEGMENTOS];
 
-typedef unsigned int tRegistro[CANT_REGISTROS]; // 4 bytes cada uno
-
+typedef unsigned int tRegistro[CANT_REGISTROS];
 
 typedef struct {
     Memoria memoria;
@@ -19,8 +22,10 @@ typedef struct {
     int corriendo; // 1 = sigue ejecutando, 0 = terminó (STOP o error)
 } MaquinaVirtual;
 
-typedef struct{
+typedef struct {
     char identificador[MAX_IDENTIFICADOR];
     unsigned char version;
     unsigned short tamano;
-}Cabecera;
+} Cabecera;
+
+#endif

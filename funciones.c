@@ -1,7 +1,7 @@
 #include "tipos.h"
 
 
-void iniciaEstructuras(Cabecera cabecera, tSegmento segmentos, TablaRegistros registros){
+void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros){
     int i;
 
     segmentos[0] = cabecera.tamano;
@@ -12,20 +12,45 @@ void iniciaEstructuras(Cabecera cabecera, tSegmento segmentos, TablaRegistros re
     for (i=2; i<CANT_SEGMENTOS; i++)
         segmentos[i] = -1;
 
-    regitros[26] = 0x00000000;  //Inicializacion CS
+    registros[26] = 0x00000000;  //Inicializacion CS
     registros[27] = 0x00010000; //Inicializacion DS
     registros[0]=registros[26]; //Inicializamos IP con CS
 }
 
-int cantidadOperandosALeer(int codigo){
-    int aux;
 
-    switch codigo:
-        0X0F: return 0;
-                break;
-        else{
-            aux= codigo & 0xF0;
-            aux >> 4
-            return aux + 1;
-        }
+int cantidadOperandosALeer(int codigo) {
+    if (codigo == 0x0F) 
+        return 0;
+    else
+        return ((codigo & 0xF0) >> 4) + 1;
+}
+
+int direccionLogicaAFisica(unsigned int direccionLogica, tSegmento segmentos) {
+    unsigned int codigoSegmento;
+    unsigned int desplazamiento;
+    int segmento;
+    unsigned int base;
+    unsigned int tamano;
+
+    codigoSegmento = direccionLogica >> 16;
+    desplazamiento = direccionLogica & 0xFFFF;
+
+    if (codigoSegmento >= CANT_SEGMENTOS) {
+        return -1;
+    }
+
+    segmento = segmentos[codigoSegmento];
+
+    if (segmento == -1) {
+        return -1;
+    }
+
+    base = ((unsigned int)segmento) >> 16;
+    tamano = ((unsigned int)segmento) & 0xFFFF;
+
+    if (desplazamiento >= tamano) {
+        return -1;
+    }
+
+    return (int)(base + desplazamiento);
 }

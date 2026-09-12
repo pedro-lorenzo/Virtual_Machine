@@ -1,27 +1,27 @@
-#include tipos.h
+#include <stdio.h>
+#include "tipos.h"
 #include <string.h>
 #include "funciones.h"
 
 int main (){
     FILE *file;
     file = fopen("kwbv", "rb");
-    Cabecera Cabecera;
-    Memoria memoria;
-    tSegmento segmento;
-    TablaRegistros registros;
+    Cabecera cabecera;
+    MaquinaVirtual vm;
 
     if (file != NULL){
-        fread(&Cabecera, 1, sizeof(Cabecera), file);
-        if (strcmp(Cabecera.identificador, "VMX26") && Cabecera.version == 1){
-            for (int i = 0; i < Cabecera.tamano; i++){
-                fread(&memoria.datos[i], 1, sizeof(char), file);
+        fread(&cabecera, 1, sizeof(cabecera), file);
+        if (memcmp(cabecera.identificador, "VMX26", 5) == 0 && cabecera.version == 1){       // memcmp compara exactamente los 5 bytes, ya que identificador no es una cadena
+            for (int i = 0; i < cabecera.tamano; i++){
+                fread(&vm.memoria.datos[i], 1, sizeof(char), file);
             }
             fclose(file);
-            iniciaEstructuras(cabecera, segmento, registros);
+            iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros);
+            vm.corriendo = 1;
+            procesaPrograma(&vm);
         }
+        
     }
-
-    procesaPrograma(memoria, registros, segmento);
 
     return 0;
 }
