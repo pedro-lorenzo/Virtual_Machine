@@ -5,7 +5,7 @@
 
 void procesaPrograma( MaquinaVirtual *vm){
 
-    char instruccion, *opA;
+    char instruccion, *opA, *opB;
     int cantOp,tipoOpA, tipoOpB,indiceMemoria, i;
 
 
@@ -33,13 +33,13 @@ void procesaPrograma( MaquinaVirtual *vm){
             indiceMemoria=vm->registros[0]+1;
             opB = (char *) malloc(sizeof(char)*tipoOpB);
             for (i=0; i<tipoOpB; i++){
-                opB[i]=vm->memoria[indiceMemoria]; //bien?
+                opB[i]=vm->memoria.datos[indiceMemoria]; //bien?
                 indiceMemoria++;
             }
             
             opA = (char *) malloc(sizeof(char)*tipoOpA);
             for (i=0; i<tipoOpA; i++){
-                opA[i]=vm->memoria[indiceMemoria]; 
+                opA[i]=vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
         }

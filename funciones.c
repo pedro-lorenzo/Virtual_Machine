@@ -1,7 +1,7 @@
 #include "tipos.h"
 
 
-void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, TablaRegistros *registros){
+void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros){
     int i;
 
     segmentos[0] = cabecera.tamano;
