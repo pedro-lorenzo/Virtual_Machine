@@ -9,10 +9,10 @@ typedef struct {
 
 typedef int tSegmento[CANT_SEGMENTOS];
 
-
 typedef struct {
     unsigned int  registros[CANT_REGISTROS]; // 4 bytes cada uno
 } TablaRegistros;
+
 
 typedef struct {
     Memoria memoria;
