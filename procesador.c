@@ -5,11 +5,11 @@
 
 void procesaPrograma( MaquinaVirtual *vm){
 
-    char instruccion, *opA;
+    char instruccion, *opA, *opB;
     int cantOp,tipoOpA, tipoOpB,indiceMemoria, i;
 
-
-
+    //hay que modificar el tipo maquina virtual porque registos es del tipo tabla re registro , tendria que llamarse como  vm->registros.registros[0]
+//Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         instruccion=vm->registros[0];
 
