@@ -8,7 +8,7 @@ void procesaPrograma( MaquinaVirtual *vm){
     char instruccion, *opA, *opB;
     int cantOp,tipoOpA, tipoOpB,indiceMemoria, i;
 
-    //hay que modificar el tipo maquina virtual porque registos es del tipo tabla re registro , tendria que llamarse como  vm->registros.registros[0]
+    
 //Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         instruccion=vm->registros[0];
@@ -26,20 +26,20 @@ void procesaPrograma( MaquinaVirtual *vm){
                 tipoOpA = (instruccion & 0b11000000) >> 6;
             else{
                 tipoOpB = (instruccion & 0b11000000) >> 6;
-                tipoOpA = (instruccion & 0b00110000) >> 6;
+                tipoOpA = (instruccion & 0b00110000) >> 4;
             }
             
             
             indiceMemoria=vm->registros[0]+1;
             opB = (char *) malloc(sizeof(char)*tipoOpB);
             for (i=0; i<tipoOpB; i++){
-                opB[i]=vm->memoria[indiceMemoria]; //bien?
+                opB[i]=vm->memoria.datos[indiceMemoria]; //bien?
                 indiceMemoria++;
             }
             
             opA = (char *) malloc(sizeof(char)*tipoOpA);
             for (i=0; i<tipoOpA; i++){
-                opA[i]=vm->memoria[indiceMemoria]; 
+                opA[i]=vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
         }
