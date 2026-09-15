@@ -1,4 +1,4 @@
-
+#ifndef INSTRUCCIONES_H
 #define INSTRUCCIONES_H
 
 #include "tipos.h"
@@ -43,3 +43,4 @@ void ejecutarRND (MaquinaVirtual *vm);
    o cualquier valor fuera de 0-31 si algun dia llegara a pasar) */
 void instruccionInvalida(MaquinaVirtual *vm);
 
+#endif

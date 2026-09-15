@@ -5,13 +5,14 @@
 
 void procesaPrograma( MaquinaVirtual *vm){
 
-    char instruccion, *opA, *opB;
-    int cantOp,tipoOpA, tipoOpB,indiceMemoria, i;
+    char instruccion;
+    int cantOp,tipoOpA, tipoOpB,indiceMemoria, i, direccionFisica, opB, opA;
 
     
 //Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
-        instruccion=vm->registros[0];
+        direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
+        instruccion= vm->memoria.datos[direccionFisica];
 
         vm->registros[1]= instruccion & 0x1F;
         cantOp= cantidadOperandosALeer(vm->registros[1]);
@@ -30,16 +31,18 @@ void procesaPrograma( MaquinaVirtual *vm){
             }
             
             
-            indiceMemoria=vm->registros[0]+1;
-            opB = (char *) malloc(sizeof(char)*tipoOpB);
+            indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos);
+            opB=0;
             for (i=0; i<tipoOpB; i++){
-                opB[i]=vm->memoria.datos[indiceMemoria]; //bien?
+                opB = opB << 8;
+                opB += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
             
-            opA = (char *) malloc(sizeof(char)*tipoOpA);
+            opA=0;
             for (i=0; i<tipoOpA; i++){
-                opA[i]=vm->memoria.datos[indiceMemoria]; 
+                opA = opA << 8;
+                opA += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
         }

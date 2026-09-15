@@ -1,6 +1,3 @@
-#ifndef TIPOS_H
-#define TIPOS_H
-
 #define TAM_MEMORIA 16384
 #define CANT_REGISTROS 32
 #define CANT_SEGMENTOS 8
@@ -28,4 +25,3 @@ typedef struct {
     unsigned short tamano;
 } Cabecera;
 
-#endif
