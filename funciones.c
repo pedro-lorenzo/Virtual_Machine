@@ -60,3 +60,29 @@ int direccionLogicaAFisica(unsigned int direccionLogica, tSegmento segmentos) {
 
     return (int)(base + desplazamiento);
 }
+
+int leerOperando(MaquinaVirtual *vm, unsigned int registroOP){
+    int tipo = (registroOP >> 24 )& 0xFF;
+    int operando = registroOP & 0xFFFFFF;
+    if (tipo == 0b01 )
+        return vm->registros[operando];
+    else
+     if (tipo == 0b10)         // inmediato
+        return operando;
+     else{//memoria
+        int codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
+        int desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
+        //por si arrastra el signo (igualk que en funcion direccion logica a fisica)
+        desplazamiento = desplazamiento << 16;
+        desplazamiento = desplazamiento >> 16;
+        int direccionlogica = vm ->registros[codigoRegistro] + desplazamiento;
+        int direccionFisica = direccionLogicaAFisica(direccionlogica,vm->segmentos);
+        //lee los 4 bytes empezando desde la direccion fisica
+        int valor = 0;
+        for (int i = 0; i < 4; i++){
+            valor = valor << 8;
+            valor += vm->memoria.datos[direccionFisica + i];
+        }
+        return valor;
+    }
+}

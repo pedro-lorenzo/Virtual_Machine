@@ -2,7 +2,7 @@
 #define FUNCIONES_H
 
 #include "tipos.h"
-
+int leerOperando(MaquinaVirtual *vm, unsigned int registroOP);
 void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros);
 int cantidadOperandosALeer(int codigo);
 int direccionLogicaAFisica(unsigned int direccionLogica,

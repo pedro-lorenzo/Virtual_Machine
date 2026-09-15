@@ -1,6 +1,7 @@
 #include "tipos.h"
 #include <string.h>
 #include "funciones.h"
+#include "instrucciones.h"
 #include <stdlib.h>
 
 void procesaPrograma( MaquinaVirtual *vm){
@@ -12,14 +13,17 @@ void procesaPrograma( MaquinaVirtual *vm){
 //Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
+        if (direccionFisica==-1){
+            vm->registros[0] = -1;
+            vm->corriendo = 0;
+            continue; //vuelve a chequear el while para salir
+        }
         instruccion= vm->memoria.datos[direccionFisica];
 
         vm->registros[1]= instruccion & 0x1F;
         cantOp= cantidadOperandosALeer(vm->registros[1]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
-            vm->registros[0]= -1;
-            vm->corriendo=0;
-            
+            tabla_instrucciones[vm->registros[1]](vm);
         }
         
         else{
@@ -45,7 +49,12 @@ void procesaPrograma( MaquinaVirtual *vm){
                 opA += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
-        }
+        int tamanoInstruccion = 1 + tipoOpA + tipoOpB;   // 1 byte del opcode + los operandos
+        vm->registros[0] += tamanoInstruccion;
+        vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
+        vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
+        tabla_instrucciones[vm->registros[1]](vm);
         
+    }
     }
 }
