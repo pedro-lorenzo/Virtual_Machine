@@ -12,7 +12,8 @@
      0x10-0x1F  -> instrucciones de dos operandos (16)
    ============================================================ */
 InstruccionFn tabla_instrucciones[32] = {
-
+    /* ---- sin operandos ---- */
+    [0x0F] = ejecutarSTOP,
     /* ---- un operando ---- */
     [0x00] = ejecutarSYS,
     [0x01] = ejecutarJMP,
@@ -58,6 +59,11 @@ void instruccionInvalida(MaquinaVirtual *vm){
     vm->corriendo = 0;
 }
 
+void ejecutarSTOP(MaquinaVirtual *vm){
+    printf("STOP\n");
+    vm->registros[0] = -1;   // IP = 0xFFFFFFFF
+    vm->corriendo = 0;
+}
 void ejecutarSYS (MaquinaVirtual *vm){ printf("SYS\n");  /* TODO */ }
 void ejecutarJMP (MaquinaVirtual *vm){ printf("JMP\n");  /* TODO */ }
 void ejecutarJP  (MaquinaVirtual *vm){ printf("JP\n");   /* TODO */ }
