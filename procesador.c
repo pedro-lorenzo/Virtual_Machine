@@ -27,8 +27,10 @@ void procesaPrograma( MaquinaVirtual *vm){
         }
         
         else{
-            if (cantOp==1)
+            if (cantOp==1){
                 tipoOpA = (instruccion & 0b11000000) >> 6;
+                tipoOpB = 0;
+            }
             else{
                 tipoOpB = (instruccion & 0b11000000) >> 6;
                 tipoOpA = (instruccion & 0b00110000) >> 4;
@@ -54,7 +56,6 @@ void procesaPrograma( MaquinaVirtual *vm){
         vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
         vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
         tabla_instrucciones[vm->registros[1]](vm);
-        
     }
     }
 }
