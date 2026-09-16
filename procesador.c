@@ -56,6 +56,7 @@ void procesaPrograma( MaquinaVirtual *vm){
         vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
         vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
         tabla_instrucciones[vm->registros[1]](vm);
+        
     }
     }
 }
