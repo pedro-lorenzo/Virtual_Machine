@@ -27,8 +27,10 @@ void procesaPrograma( MaquinaVirtual *vm){
         }
         
         else{
-            if (cantOp==1)
+            if (cantOp==1){
                 tipoOpA = (instruccion & 0b11000000) >> 6;
+                tipoOpB = 0;
+            }
             else{
                 tipoOpB = (instruccion & 0b11000000) >> 6;
                 tipoOpA = (instruccion & 0b00110000) >> 4;

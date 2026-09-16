@@ -5,6 +5,9 @@
 #define CANT_REGISTROS 32
 #define CANT_SEGMENTOS 8
 #define MAX_IDENTIFICADOR 5
+#define REG_LAR 4
+#define REG_MAR 5
+#define REG_MBR 6
 
 typedef struct {
     unsigned char datos[TAM_MEMORIA];
