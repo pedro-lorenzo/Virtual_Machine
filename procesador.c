@@ -13,7 +13,7 @@ void procesaPrograma( MaquinaVirtual *vm){
 //Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
-        if (direccionFisica==-1){
+        if (direccionFisica==-1 || direccionFisica>TAM_MEMORIA){    //Condiciones de corte
             vm->registros[0] = -1;
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
@@ -37,9 +37,9 @@ void procesaPrograma( MaquinaVirtual *vm){
             }
             
             
-            indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos);
+            indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
             opB=0;
-            for (i=0; i<tipoOpB; i++){
+            for (i=0; i<tipoOpB; i++){  //Como el tipo determina la cantidad de bytes del operando, leemos tipoOpB celdas de memoria
                 opB = opB << 8;
                 opB += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;

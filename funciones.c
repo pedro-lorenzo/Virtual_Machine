@@ -6,10 +6,10 @@
 void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros){
     int i;
 
-    segmentos[0] = cabecera.tamano;
+    segmentos[0] = cabecera.tamano;                                 //Inicia el segmento de código
     segmentos[1] = cabecera.tamano;
     segmentos[1]= segmentos[1] << 16;
-    segmentos[1] = segmentos[1] | TAM_MEMORIA - cabecera.tamano;
+    segmentos[1] = segmentos[1] | TAM_MEMORIA - cabecera.tamano;    //Inicia parte alta y baja del Segmento de datos
 
     for (i=2; i<CANT_SEGMENTOS; i++)
         segmentos[i] = -1;
@@ -64,26 +64,28 @@ int direccionLogicaAFisica(unsigned int direccionLogica, tSegmento segmentos) {
 }
 
 int leerOperando(MaquinaVirtual *vm, unsigned int registroOP){
-    int tipo = (registroOP >> 24 )& 0xFF;
-    int operando = registroOP & 0xFFFFFF; //valor operando codificado
-    if (tipo == 1 )
+    int direccionLogica, direccionFisica, codigoRegistro, codigoDesplazamiento, tipo, operando, desplazamiento, valor;
+
+    tipo = (registroOP >> 24 )& 0xFF;
+    operando = registroOP & 0xFFFFFF; //valor operando codificado
+    if (tipo == 1 )         //Registro
         return vm->registros[operando & 0x1F];
     else
-     if (tipo == 2)         // inmediato
+     if (tipo == 2)         //Inmediato
         return operando;
-     else{  //memoria
-        int codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
-        int desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
+     else{                  //Memoria
+        codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
+        desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
         
-        //por si arrastra el signo (igualk que en funcion direccion logica a fisica)
+        //por si arrastra el signo (igual que en funcion direccion logica a fisica)
         desplazamiento = desplazamiento << 16;
         desplazamiento = desplazamiento >> 16;
         
-        int direccionLogica = vm ->registros[codigoRegistro] + desplazamiento;
-        //int direccionFisica = direccionLogicaAFisica(direccionlogica,vm->segmentos);
+        direccionLogica = (vm ->registros[codigoRegistro] << 16) | desplazamiento; // construye la direccion logica: segmento(cont del reg) y offset(desplazamiento)
+        direccionFisica = direccionLogicaAFisica(direccionLogica,vm->segmentos);
         
         //lee los 4 bytes empezando desde la direccion fisica
-        int valor = 0;
+        valor = 0;
 
         if (!leerMemoria(vm, direccionLogica,4,&valor))
             return 0;
