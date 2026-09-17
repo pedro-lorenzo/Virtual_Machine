@@ -6,9 +6,9 @@
 
 void procesaPrograma( MaquinaVirtual *vm){
 
-    unsigned char instruccion;
-    int cantOp,tipoOpA, tipoOpB, indiceMemoria, i, direccionFisica;
-    unsigned int opB, opA;
+    uint8_t instruccion;
+    int32_t cantOp,tipoOpA, tipoOpB, indiceMemoria, i, direccionFisica;
+    uint32_t opB, opA;
 
     
 //Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
@@ -52,7 +52,7 @@ void procesaPrograma( MaquinaVirtual *vm){
                 opA += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
-        int tamanoInstruccion = 1 + tipoOpA + tipoOpB;   // 1 byte del opcode + los operandos
+        int32_t tamanoInstruccion = 1 + tipoOpA + tipoOpB;   // 1 byte del opcode + los operandos
         vm->registros[0] += tamanoInstruccion;
         vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
         vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
