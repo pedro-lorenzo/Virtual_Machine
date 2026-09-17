@@ -7,11 +7,12 @@
 #define BIT_V 28
 
 static void setCC(MaquinaVirtual *vm, int N, int Z, int C, int V) {
-    vm->registros[REG_CC] =
-          ((unsigned int)(N & 1) << BIT_N)
-        | ((unsigned int)(Z & 1) << BIT_Z)
-        | ((unsigned int)(C & 1) << BIT_C)
-        | ((unsigned int)(V & 1) << BIT_V);
+    vm->registros[REG_CC] = (N & 1) ? INT32_MIN : 0;
+
+    vm->registros[REG_CC] |=
+          ((Z & 1) << BIT_Z)
+        | ((C & 1) << BIT_C)
+        | ((V & 1) << BIT_V);
 }
 
 void actualizarCC_sumaResta(MaquinaVirtual *vm, int64_t sumaConSigno, uint64_t sumaSinSigno, int32_t resultado) {
