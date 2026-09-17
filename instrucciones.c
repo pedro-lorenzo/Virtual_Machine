@@ -15,11 +15,12 @@
      0x0B-0x0E  -> huecos sin usar -> instruccion invalida (4)
      0x0F       -> STOP (sin operandos)
      0x10-0x1F  -> instrucciones de dos operandos (16)
-    */
+*/
 InstruccionFn tabla_instrucciones[32] = {
-    /* ---- sin operandos ---- */
+    // sin operandos
     [0x0F] = ejecutarSTOP,
-    /* ---- un operando ---- */
+
+    // Un operando
     [0x00] = ejecutarSYS,
     [0x01] = ejecutarJMP,
     [0x02] = ejecutarJP,
@@ -32,14 +33,13 @@ InstruccionFn tabla_instrucciones[32] = {
     [0x09] = ejecutarJNZ,
     [0x0A] = ejecutarNOT,
 
-    /* ---- huecos: no existen en la especificacion ---- */
+    // Instrucciones invalidas
     [0x0B] = instruccionInvalida,
     [0x0C] = instruccionInvalida,
     [0x0D] = instruccionInvalida,
     [0x0E] = instruccionInvalida,
-
     
-    /* ---- dos operandos ---- */
+    // Dos operandos
     [0x10] = ejecutarMOV,
     [0x11] = ejecutarADD,
     [0x12] = ejecutarSUB,
@@ -72,9 +72,8 @@ void ejecutarSTOP(MaquinaVirtual *vm){
 
 //  ARITMETICAS
 
-
 void ejecutarADD(MaquinaVirtual *vm) {
-    int valorA, valorB, escribioOk;
+    int32_t valorA, valorB, escribioOk;
     int64_t sumaConSigno;
     uint64_t sumaSinSigno;
     int32_t resultado;
@@ -97,7 +96,7 @@ void ejecutarADD(MaquinaVirtual *vm) {
 }
 
 void ejecutarSUB(MaquinaVirtual *vm) {
-    int valorA, valorB, escribioOk;
+    int32_t valorA, valorB, escribioOk;
     int64_t sumaConSigno;
     uint32_t menosBSinSigno;
     uint64_t sumaSinSigno;
@@ -128,7 +127,7 @@ void ejecutarSUB(MaquinaVirtual *vm) {
 }
 
 void ejecutarMUL(MaquinaVirtual *vm) {
-    int valorA, valorB, escribioOk;
+    int32_t valorA, valorB, escribioOk;
     int64_t productoConSigno;
     uint64_t productoSinSigno;
     int32_t resultado;
@@ -138,7 +137,7 @@ void ejecutarMUL(MaquinaVirtual *vm) {
     if (!vm->corriendo) return;
 
     /* 64 bits alcanzan siempre: el peor caso (INT_MIN * INT_MIN)
-       entra comodo en un int64_t. */
+       entra en un int64_t. */
     productoConSigno = (int64_t)valorA * (int64_t)valorB;
     productoSinSigno = (uint64_t)(uint32_t)valorA * (uint64_t)(uint32_t)valorB;
     resultado = (int32_t)productoConSigno;
@@ -150,7 +149,7 @@ void ejecutarMUL(MaquinaVirtual *vm) {
 }
 
 void ejecutarDIV(MaquinaVirtual *vm) {
-    int valorA, valorB, overflow, escribioOk;
+    int32_t valorA, valorB, overflow, escribioOk;
     int32_t cociente, resto;
     int64_t cocienteAmplio;
 
@@ -182,7 +181,7 @@ void ejecutarDIV(MaquinaVirtual *vm) {
 
     escribioOk = escribirOperando(vm, vm->registros[REG_OP1], cociente);
     if (!escribioOk || !vm->corriendo) { vm->corriendo = 0; return; }
-    vm->registros[REG_AC] = (unsigned int)resto;
+    vm->registros[REG_AC] = resto;
 
     /* C siempre 0 en DIV: no hay sumador involucrado. */
     actualizarCC_division(vm, cociente, overflow);
@@ -191,7 +190,7 @@ void ejecutarDIV(MaquinaVirtual *vm) {
 //  LOGICAS
 
 void ejecutarAND(MaquinaVirtual *vm) {
-    int valorA, valorB, escribioOk;
+    int32_t valorA, valorB, escribioOk;
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
@@ -207,7 +206,7 @@ void ejecutarAND(MaquinaVirtual *vm) {
 }
 
 void ejecutarOR(MaquinaVirtual *vm) {
-    int valorA, valorB, escribioOk;
+    int32_t valorA, valorB, escribioOk;
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
@@ -223,7 +222,7 @@ void ejecutarOR(MaquinaVirtual *vm) {
 }
 
 void ejecutarXOR(MaquinaVirtual *vm) {
-    int valorA, valorB, escribioOk;
+    int32_t valorA, valorB, escribioOk;
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
@@ -239,7 +238,7 @@ void ejecutarXOR(MaquinaVirtual *vm) {
 }
 
 void ejecutarNOT(MaquinaVirtual *vm) {
-    int valor, escribioOk;
+    int32_t valor, escribioOk;
     int32_t resultado;
 
     valor = leerOperando(vm, vm->registros[REG_OP1]);
@@ -256,7 +255,7 @@ void ejecutarNOT(MaquinaVirtual *vm) {
 //  SWAP -- se implementa reutilizando ejecutarXOR tres veces, intercambiando OP1/OP2 entre llamadas.
 
 void ejecutarSWAP(MaquinaVirtual *vm) {
-    unsigned int op1Original, op2Original;
+    uint32_t op1Original, op2Original;
 
     op1Original = vm->registros[REG_OP1];
     op2Original = vm->registros[REG_OP2];
@@ -272,6 +271,88 @@ void ejecutarSWAP(MaquinaVirtual *vm) {
     vm->registros[REG_OP1] = op1Original;
     vm->registros[REG_OP2] = op2Original;
     ejecutarXOR(vm);
+}
+
+/* 
+   SHL -> equivale a valorA * 2^n. Se calcula en 64 bits para
+   comparar contra el rango de 32 antes de truncar (mismo patron
+   que MUL). Caso especial n>=32
+*/
+void ejecutarSHL(MaquinaVirtual *vm) {
+    int32_t valorA, n, resultado;
+    int escribioOk, C, V;
+    int64_t productoConSigno;
+    uint64_t productoSinSigno;
+ 
+    valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    n = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+ 
+    if (n >= 32) {
+        resultado = 0;
+        C = (valorA != 0) ? 1 : 0;
+        V = C;
+    } else {
+        productoConSigno = (int64_t)valorA * (int64_t)(1LL << n); // castea el 1 a 64 bits para evitar error de ejecucion
+        productoSinSigno = (uint64_t)(uint32_t)valorA << n;
+        resultado = (int32_t)productoConSigno;
+        C = (productoSinSigno > 0xFFFFFFFFULL) ? 1 : 0;
+        V = (productoConSigno > INT32_MAX || productoConSigno < INT32_MIN) ? 1 : 0;
+    }
+ 
+    escribioOk = escribirOperando(vm, vm->registros[REG_OP1], resultado);
+    if (!escribioOk || !vm->corriendo) { vm->corriendo = 0; return; }
+ 
+    actualizarCC_desplazamiento(vm, resultado, C, V);
+}
+ 
+/* 
+   SHR ->  Nunca hay overflow ni carry: un corrimiento a 
+   la derecha solo puede achicar la magnitud, jamas hacer 
+   que el resultado "exceda 32 bits".
+   
+*/
+void ejecutarSHR(MaquinaVirtual *vm) {
+    int32_t valorA, n, resultado;
+    int escribioOk;
+ 
+    valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    n = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+ 
+    if (n >= 32)
+        resultado = 0;
+    else
+        resultado = (int32_t)((uint32_t)valorA >> n);
+ 
+    escribioOk = escribirOperando(vm, vm->registros[REG_OP1], resultado);
+    if (!escribioOk || !vm->corriendo) { vm->corriendo = 0; return; }
+ 
+    actualizarCC_desplazamiento(vm, resultado, 0, 0);
+}
+ 
+/* 
+   SAR -> igual que SHR pero propaga el bit de signo (relleno con
+   unos si el valor es negativo), para seguir siendo equivalente a
+   dividir por 2^n. Tampoco hay overflow ni carry nunca.
+*/
+void ejecutarSAR(MaquinaVirtual *vm) {
+    int32_t valorA, n, resultado;
+    int escribioOk;
+ 
+    valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    n = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+ 
+    if (n >= 32)
+        resultado = (valorA < 0) ? -1 : 0;
+    else
+        resultado = valorA >> n; // shift aritmetico
+ 
+    escribioOk = escribirOperando(vm, vm->registros[REG_OP1], resultado);
+    if (!escribioOk || !vm->corriendo) { vm->corriendo = 0; return; }
+ 
+    actualizarCC_desplazamiento(vm, resultado, 0, 0);
 }
 
 void ejecutarSYS (MaquinaVirtual *vm){ printf("SYS\n");  /* TODO */ }

@@ -5,9 +5,7 @@
 #define CANT_REGISTROS 32
 #define CANT_SEGMENTOS 8
 #define MAX_IDENTIFICADOR 5
-#define REG_LAR 4
-#define REG_MAR 5
-#define REG_MBR 6
+
 
 typedef struct {
     unsigned char datos[TAM_MEMORIA];
@@ -16,7 +14,7 @@ typedef struct {
 /* Es signed porque los segmentos no utilizados se representan con -1. */
 typedef int tSegmento[CANT_SEGMENTOS];
 
-typedef unsigned int tRegistro[CANT_REGISTROS];
+typedef int tRegistro[CANT_REGISTROS];
 
 typedef struct {
     Memoria memoria;

@@ -16,8 +16,8 @@ int main (int argc, char *argv[]){
             fread(&cabecera, 1, sizeof(cabecera), file);
             cabecera.tamano = (cabecera.tamano << 8) | (cabecera.tamano >> 8);
             if (memcmp(cabecera.identificador, "VMX26", 5) == 0 && cabecera.version == 1){       // memcmp compara exactamente los 5 bytes, ya que identificador no es una cadena
-                for (int i = 0; i < cabecera.tamano; i++){
-                    fread(&vm.memoria.datos[i], 1, sizeof(char), file);
+                for (int32_t i = 0; i < cabecera.tamano; i++){
+                    fread(&vm.memoria.datos[i], 1, sizeof(uint8_t), file);
                 }
                 fclose(file);
                 iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros);

@@ -1,10 +1,10 @@
-#include "tipos.h"
+#include "Registros.h"
 #include "funciones.h"
 #include <stdio.h>
 
 
 void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros){
-    int i;
+    int32_t i;
 
     segmentos[0] = cabecera.tamano;                                 //Inicia el segmento de código
     segmentos[1] = cabecera.tamano;
@@ -23,28 +23,22 @@ void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro regi
 }
 
 
-int cantidadOperandosALeer(int codigo) {
-    if (codigo == 0x0F) 
+int32_t cantidadOperandosALeer(int32_t codigo) {
+    if (codigo == 0x0F)
         return 0;
     else
         return ((codigo & 0xF0) >> 4) + 1;
 }
 
-int direccionLogicaAFisica(unsigned int direccionLogica, tSegmento segmentos) {
-    unsigned int codigoSegmento;
-    unsigned int desplazamiento;
-    int segmento;
-    unsigned int base;
-    unsigned int tamano;
+int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos) {
+    uint32_t codigoSegmento;
+    uint32_t desplazamiento;
+    int32_t segmento;
+    uint32_t base;
+    uint32_t tamano;
 
     codigoSegmento = direccionLogica >> 16;
     desplazamiento = direccionLogica & 0xFFFF;
-    desplazamiento = desplazamiento << 16;
-    desplazamiento = desplazamiento >> 16;
-
-    if (desplazamiento < 0){
-        return -1;
-    }
 
     if (codigoSegmento >= CANT_SEGMENTOS) {
         return -1;
@@ -56,95 +50,98 @@ int direccionLogicaAFisica(unsigned int direccionLogica, tSegmento segmentos) {
         return -1;
     }
 
-    base = ((unsigned int)segmento) >> 16;
-    tamano = ((unsigned int)segmento) & 0xFFFF;
+    base = ((uint32_t)segmento) >> 16;
+    tamano = ((uint32_t)segmento) & 0xFFFF;
 
     if (desplazamiento >= tamano) {
         return -1;
     }
 
-    return (int)(base + desplazamiento);
+    return (int32_t)(base + desplazamiento);
 }
 
-int leerOperando(MaquinaVirtual *vm, unsigned int registroOP){
-    int direccionLogica, direccionFisica, codigoRegistro, codigoDesplazamiento, tipo, operando, desplazamiento, valor;
+int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP){
+    int32_t desplazamiento, valor;
+    uint32_t direccionLogica, codigoRegistro, tipo, operando;
 
     tipo = (registroOP >> 24 )& 0xFF;
     operando = registroOP & 0xFFFFFF; //valor operando codificado
+    
     if (tipo == 1 )         //Registro
         return vm->registros[operando & 0x1F];
     else
-     if (tipo == 2)         //Inmediato
-        return operando;
-     else{                  //Memoria
-        codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
-        desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
+        if (tipo == 2){       //Inmediato
+            valor = (int32_t)((operando & 0xFFFFu) << 16);
+            valor = valor >> 16;
+            return valor;
+        }
+        else{                  //Memoria
+            codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
+            desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
         
-        //por si arrastra el signo (igual que en funcion direccion logica a fisica)
-        desplazamiento = desplazamiento << 16;
-        desplazamiento = desplazamiento >> 16;
+            //por si arrastra el signo (igual que en funcion direccion logica a fisica)
+            desplazamiento = desplazamiento << 16;
+            desplazamiento = desplazamiento >> 16;
         
-        direccionLogica = (vm ->registros[codigoRegistro] << 16) | desplazamiento; // construye la direccion logica: segmento(cont del reg) y offset(desplazamiento)
-        direccionFisica = direccionLogicaAFisica(direccionLogica,vm->segmentos);
+            direccionLogica = (uint32_t)vm ->registros[codigoRegistro] + desplazamiento; // construye la direccion logica: segmento(cont del reg) y offset(desplazamiento)
         
-        //lee los 4 bytes empezando desde la direccion fisica
-        valor = 0;
+            //lee los 4 bytes empezando desde la direccion fisica
+            valor = 0;
 
-        if (!leerMemoria(vm, direccionLogica,4,&valor))
-            return 0;
+            if (!leerMemoria(vm, direccionLogica,4,&valor))
+                return 0;
 
-        return valor;
-    }
+            return valor;
+        }
 }
 
-void cargarLAR(MaquinaVirtual *vm, unsigned int direccionLogica){
+void cargarLAR(MaquinaVirtual *vm, uint32_t direccionLogica){
     vm->registros[REG_LAR] = direccionLogica;
 }
 
-void cargarCantidadBytesMAR(MaquinaVirtual *vm, unsigned int cantidadBytes){
+void cargarCantidadBytesMAR(MaquinaVirtual *vm, uint32_t cantidadBytes){
     vm->registros[REG_MAR] = (cantidadBytes & 0xFFFF) << 16;
 }
 
-void cargarDireccionMAR(MaquinaVirtual *vm, int direccionFisica){
+void cargarDireccionMAR(MaquinaVirtual *vm, int32_t direccionFisica){
     vm->registros[REG_MAR] |= (direccionFisica & 0xFFFFu);
 }
 
-int leerMemoria(MaquinaVirtual *vm, unsigned int direccionLogica, unsigned int cantidadBytes, int *resultado){
-    int direccionFisica = PrepararAccesoMemoria(vm, direccionLogica, cantidadBytes);
+int32_t leerMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t cantidadBytes, int32_t *resultado){
+    int32_t direccionFisica = PrepararAccesoMemoria(vm, direccionLogica, cantidadBytes);
 
     if (direccionFisica == -1)
         return 0;
     else{
-        int valor = 0;
-        for (int i=0; i < cantidadBytes; i++){
+        uint32_t valor = 0;
+        for (int32_t i=0; i < cantidadBytes; i++){
             valor = valor << 8;
             valor = valor | vm->memoria.datos[direccionFisica + i];
         }
+        *resultado = (int32_t)valor;
 
-        vm->registros[REG_MBR] = valor; // carga MBR
-
-        *resultado = valor;
+        vm->registros[REG_MBR] = *resultado; // carga MBR
 
         return 1;
     }
 }
 
-int PrepararAccesoMemoria(MaquinaVirtual *vm, unsigned int direccionLogica, unsigned int cantidadBytes){
+int32_t PrepararAccesoMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t cantidadBytes){
     cargarLAR(vm, direccionLogica);
     cargarCantidadBytesMAR(vm, cantidadBytes);
 
-    int direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+    int32_t direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
 
     if (direccionFisica == -1){
         vm->corriendo = 0;
         return -1;
     }
 
-    unsigned int codigoSegmento = direccionLogica >> 16;
-    unsigned int desplazamiento = direccionLogica & 0xFFFF;
-    int tamanoSegmento = vm->segmentos[codigoSegmento] & 0xFFFF;
+    uint32_t codigoSegmento = direccionLogica >> 16;
+    uint32_t desplazamiento = direccionLogica & 0xFFFF;
+    uint32_t tamanoSegmento = (uint32_t)vm->segmentos[codigoSegmento] & 0xFFFF;
 
-    if (cantidadBytes == 0 || cantidadBytes > tamanoSegmento || desplazamiento > tamanoSegmento - cantidadBytes){
+    if (cantidadBytes == 0 || cantidadBytes > tamanoSegmento || desplazamiento > tamanoSegmento - cantidadBytes || cantidadBytes > 4){
         vm->corriendo = 0;
         return -1;
     }
@@ -154,23 +151,23 @@ int PrepararAccesoMemoria(MaquinaVirtual *vm, unsigned int direccionLogica, unsi
     return direccionFisica;
 }
 
-int escribirOperando (MaquinaVirtual *vm, unsigned int registroOP, int valor){ //devuelve 1 si escribio o 0 si no
-    unsigned int tipo = (registroOP >> 24) & 0xFFu;
+int32_t escribirOperando (MaquinaVirtual *vm, uint32_t registroOP, int32_t valor){ //devuelve 1 si escribio o 0 si no
+    uint32_t tipo = (registroOP >> 24) & 0xFFu;
 
-    unsigned int operando = registroOP & 0xFFFFFFu;
+    uint32_t operando = registroOP & 0xFFFFFFu;
 
     if (tipo == 1){
-        unsigned int codigoRegistro = operando & 0x1F;
+        uint32_t codigoRegistro = operando & 0x1F;
         vm->registros[codigoRegistro] = valor;
         return 1;
     }
     else{
         if (tipo == 3){
-            unsigned int codigoRegistro = operando & 0x1F;
-            int desplazamiento = (operando >> 8) & 0xFFFF;
+            uint32_t codigoRegistro = operando & 0x1F;
+            int32_t desplazamiento = (operando >> 8) & 0xFFFF;
             desplazamiento = desplazamiento << 16;
             desplazamiento = desplazamiento >> 16;
-            unsigned int direccionLogica = vm->registros[codigoRegistro] + desplazamiento;
+            uint32_t direccionLogica = (uint32_t)vm->registros[codigoRegistro] + desplazamiento;
             return escribirMemoria(vm, direccionLogica, 4, valor);
         }
         //sino operando destino invalido
@@ -178,18 +175,18 @@ int escribirOperando (MaquinaVirtual *vm, unsigned int registroOP, int valor){ /
     }
 }
 
-int escribirMemoria (MaquinaVirtual *vm, unsigned int direccionLogica, unsigned int cantidadBytes, int valor){
-    int direccionFisica = PrepararAccesoMemoria(vm, direccionLogica, cantidadBytes);
-    
+int32_t escribirMemoria (MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t cantidadBytes, int32_t valor){
+    int32_t direccionFisica = PrepararAccesoMemoria(vm, direccionLogica, cantidadBytes);
+
     if (direccionFisica == -1)
         return 0;
 
     vm->registros[REG_MBR] = valor;
 
-    unsigned int valorAuxiliar = valor;
+    uint32_t valorAuxiliar = valor;
 
-    for (unsigned int i = cantidadBytes; i > 0; i--) {
-        vm->memoria.datos[direccionFisica + i - 1] = (unsigned char)(valorAuxiliar & 0xFFu);
+    for (uint32_t i = cantidadBytes; i > 0; i--) {
+        vm->memoria.datos[direccionFisica + i - 1] = (uint8_t)(valorAuxiliar & 0xFFu);
         valorAuxiliar >>= 8;
     }
 
