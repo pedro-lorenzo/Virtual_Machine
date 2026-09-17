@@ -445,8 +445,11 @@ void ejecutarMOV (MaquinaVirtual *vm){
 
     int valor = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
-
-
+    int escribioOK=escribirOperando(vm, vm->registros[REG_OP1], valor);
+    if (!escribioOK || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
 
 ///aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -455,6 +458,37 @@ void ejecutarCMP (MaquinaVirtual *vm){ printf("CMP\n");  /* TODO */ }
 void ejecutarSHL (MaquinaVirtual *vm){ printf("SHL\n");  /* TODO */ }
 void ejecutarSHR (MaquinaVirtual *vm){ printf("SHR\n");  /* TODO */ }
 void ejecutarSAR (MaquinaVirtual *vm){ printf("SAR\n");  /* TODO */ }
-void ejecutarLDL (MaquinaVirtual *vm){ printf("LDL\n");  /* TODO */ }
-void ejecutarLDH (MaquinaVirtual *vm){ printf("LDH\n");  /* TODO */ }
+void ejecutarLDL (MaquinaVirtual *vm){ 
+    int destino=leerOperando(vm,vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+    int operandoB = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+
+    int parteAlta=destino & (0xFFFF0000);
+    int parteBaja= (operandoB & 0xFFFF);
+    int resultado= parteBaja | parteAlta;
+
+    int escribioOk = escribirOperando(vm,vm->registros[REG_OP1],resultado);
+    if (!escribioOk || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
+}
+void ejecutarLDH (MaquinaVirtual *vm){ 
+    int destino=leerOperando(vm,vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+    int operandoB = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+
+    int parteBaja=destino & 0xFFFF;
+    int parteAlta= (operandoB & 0xFFFF)<<16;
+    int resultado= parteBaja | parteAlta;
+
+    
+    int escribioOk = escribirOperando(vm,vm->registros[REG_OP1],resultado);
+    if (!escribioOk || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
+}
 void ejecutarRND (MaquinaVirtual *vm){ printf("RND\n");  /* TODO */ }
