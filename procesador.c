@@ -6,8 +6,9 @@
 
 void procesaPrograma( MaquinaVirtual *vm){
 
-    char instruccion;
-    int cantOp,tipoOpA, tipoOpB,indiceMemoria, i, direccionFisica, opB, opA;
+    unsigned char instruccion;
+    int cantOp,tipoOpA, tipoOpB, indiceMemoria, i, direccionFisica;
+    unsigned int opB, opA;
 
     
 //Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].

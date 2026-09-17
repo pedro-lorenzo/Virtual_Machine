@@ -182,7 +182,7 @@ void ejecutarDIV(MaquinaVirtual *vm) {
 
     escribioOk = escribirOperando(vm, vm->registros[REG_OP1], cociente);
     if (!escribioOk || !vm->corriendo) { vm->corriendo = 0; return; }
-    vm->registros[REG_AC] = (unsigned int)resto;
+    vm->registros[REG_AC] = resto;
 
     /* C siempre 0 en DIV: no hay sumador involucrado. */
     actualizarCC_division(vm, cociente, overflow);

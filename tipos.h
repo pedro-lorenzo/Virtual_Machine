@@ -16,7 +16,7 @@ typedef struct {
 /* Es signed porque los segmentos no utilizados se representan con -1. */
 typedef int tSegmento[CANT_SEGMENTOS];
 
-typedef unsigned int tRegistro[CANT_REGISTROS];
+typedef int tRegistro[CANT_REGISTROS];
 
 typedef struct {
     Memoria memoria;
