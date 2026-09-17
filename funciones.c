@@ -17,6 +17,9 @@ void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro regi
     registros[26] = 0x00000000;  //Inicializacion CS
     registros[27] = 0x00010000; //Inicializacion DS
     registros[0] = registros[26]; //Inicializamos IP con CS
+
+    for (i=10; i<15; i++)  //inicia los de proposito general
+        registros[i] = 0;
 }
 
 

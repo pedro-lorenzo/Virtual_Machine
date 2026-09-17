@@ -275,17 +275,101 @@ void ejecutarSWAP(MaquinaVirtual *vm) {
 }
 
 void ejecutarSYS (MaquinaVirtual *vm){ printf("SYS\n");  /* TODO */ }
-void ejecutarJMP (MaquinaVirtual *vm){ printf("JMP\n");  /* TODO */ }
-void ejecutarJP  (MaquinaVirtual *vm){ printf("JP\n");   /* TODO */ }
-void ejecutarJN  (MaquinaVirtual *vm){ printf("JN\n");   /* TODO */ }
-void ejecutarJZ  (MaquinaVirtual *vm){ printf("JZ\n");   /* TODO */ }
-void ejecutarJC  (MaquinaVirtual *vm){ printf("JC\n");   /* TODO */ }
-void ejecutarJV  (MaquinaVirtual *vm){ printf("JV\n");   /* TODO */ }
-void ejecutarJNP (MaquinaVirtual *vm){ printf("JNP\n");  /* TODO */ }
-void ejecutarJNN (MaquinaVirtual *vm){ printf("JNN\n");  /* TODO */ }
-void ejecutarJNZ (MaquinaVirtual *vm){ printf("JNZ\n");  /* TODO */ }
+void ejecutarJMP (MaquinaVirtual *vm){ 
+     int desplazamiento = leerOperando(vm, vm->registros[2]);
+     vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
+}
 
-void ejecutarMOV (MaquinaVirtual *vm){ printf("MOV\n");  /* TODO */ }
+void ejecutarJP  (MaquinaVirtual *vm){
+    unsigned cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+    int Z = (cc >> 30) & 1;
+
+    if (N == 0 && Z == 0){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
+    }
+}
+
+void ejecutarJN  (MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+
+    if (N == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+ }
+void ejecutarJZ  (MaquinaVirtual *vm){
+     unsigned int cc = vm->registros[REG_CC];
+    int Z = (cc >> 30) & 1;
+
+    if (Z == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+void ejecutarJC(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int C = (cc >> 29) & 1;
+
+    if (C == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJV(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int V = (cc >> 28) & 1;
+
+    if (V == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJNP(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+    int Z = (cc >> 30) & 1;
+
+    if (N == 1 || Z == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJNN(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+
+    if (N == 0){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJNZ(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int Z = (cc >> 30) & 1;
+
+    if (Z == 0){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarMOV (MaquinaVirtual *vm){ 
+
+    int valor = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+
+
+
+///aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+}
 void ejecutarCMP (MaquinaVirtual *vm){ printf("CMP\n");  /* TODO */ }
 void ejecutarSHL (MaquinaVirtual *vm){ printf("SHL\n");  /* TODO */ }
 void ejecutarSHR (MaquinaVirtual *vm){ printf("SHR\n");  /* TODO */ }
