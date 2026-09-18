@@ -355,7 +355,6 @@ void ejecutarSAR(MaquinaVirtual *vm) {
     actualizarCC_desplazamiento(vm, resultado, 0, 0);
 }
 
-void ejecutarSYS (MaquinaVirtual *vm){ printf("SYS\n");  /* TODO */ }
 void ejecutarJMP (MaquinaVirtual *vm){ 
      int desplazamiento = leerOperando(vm, vm->registros[2]);
      vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
@@ -455,9 +454,7 @@ void ejecutarMOV (MaquinaVirtual *vm){
 
 }
 void ejecutarCMP (MaquinaVirtual *vm){ printf("CMP\n");  /* TODO */ }
-void ejecutarSHL (MaquinaVirtual *vm){ printf("SHL\n");  /* TODO */ }
-void ejecutarSHR (MaquinaVirtual *vm){ printf("SHR\n");  /* TODO */ }
-void ejecutarSAR (MaquinaVirtual *vm){ printf("SAR\n");  /* TODO */ }
+
 void ejecutarLDL (MaquinaVirtual *vm){ 
     int destino=leerOperando(vm,vm->registros[REG_OP1]);
     if (!vm->corriendo) return;
@@ -492,3 +489,53 @@ void ejecutarLDH (MaquinaVirtual *vm){
     }
 }
 void ejecutarRND (MaquinaVirtual *vm){ printf("RND\n");  /* TODO */ }
+
+void ejecutarSYS (MaquinaVirtual *vm){
+
+    int tipoOp=leerOperando(vm,vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+   
+
+    if (tipoOp==2){     //escribe
+        int ecx = vm->registros[REG_ECX]; // en la parte mas alta tiene cantidad a leer y el la mas baja el tamano
+        if (!vm->corriendo) return;
+        int eax=vm->registros[REG_EAX];
+        if (!vm->corriendo) return;
+        int edx=vm->registros[REG_EDX];
+        if (!vm->corriendo) return;
+        int cantidad = ecx & 0xFFFF;
+        int tamano  = (ecx >>16) &0xFFFF;
+
+
+
+
+        
+        for (int i = 0; i < cantidad; i++){
+           
+            uint32_t direccionLogica = edx + i * tamano;
+            int direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+            if (direccionFisica == -1){ vm->corriendo = 0; return; }
+            
+            int valor = 0;
+            if (!leerMemoria(vm, direccionLogica, tamano, &valor)){ vm->corriendo = 0; return; }
+            printf("[%04X]: ",direccionFisica );
+            if (eax & 0x10){
+                char binario[33];
+                obtenerBinario((unsigned int)valor, binario);
+                printf("0b%s ", binario);
+            }
+            if (eax & 0x08) printf("0x%x ", valor); //hexa y octal escriben de una
+            if (eax & 0x04) printf("0o%o ", valor); //no se hace case porque pueden pedir que escriba de mas de una forma
+            if (eax & 0x02){ /* caracteres: un char por byte, MSB primero */
+                    for (int b = tamano; b > 0; b--){
+                        unsigned char c = (unsigned char)(valor >> (8*(b-1)));
+                        printf("%c", (c >= 32 && c <= 126) ? c : '.');  // que sea imprimible
+                    }
+                    printf(" ");
+                }
+
+           
+            if (eax & 0x01) printf("%d ", valor);  //escrive decimal
+        }
+    }
+}

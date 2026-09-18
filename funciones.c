@@ -1,7 +1,7 @@
 #include "Registros.h"
 #include "funciones.h"
 #include <stdio.h>
-
+#include <string.h>
 
 void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros){
     int32_t i;
@@ -18,11 +18,9 @@ void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro regi
     registros[27] = 0x00010000; //Inicializacion DS
     registros[0] = registros[26]; //Inicializamos IP con CS
 
-    for (i=10; i<15; i++)  //inicia los de proposito general
+    for (i=10; i<16; i++)  //inicia los de proposito general
         registros[i] = 0;
 }
-
-
 int32_t cantidadOperandosALeer(int32_t codigo) {
     if (codigo == 0x0F)
         return 0;
@@ -191,4 +189,23 @@ int32_t escribirMemoria (MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t 
     }
 
     return 1;
+}
+void obtenerBinario(unsigned int valor, char *binario){
+    char temp[33];
+    int i = 32;
+    temp[32] = '\0';   // el buffer termina con el caracter nulo
+
+    if (valor == 0){
+        binario[0] = '0';
+        binario[1] = '\0';
+        return;
+    }
+
+    while (valor > 0){
+        i--;
+        temp[i] = (valor % 2) + '0';   // resto de dividir por 2 = el bit actual, como caracter '0' o '1'
+        valor /= 2;                     // "corro" el numero para la siguiente vuelta
+    }
+
+    strcpy(binario, &temp[i]);   // copio desde donde empezaron los digitos reales
 }
