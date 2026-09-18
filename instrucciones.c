@@ -355,22 +355,187 @@ void ejecutarSAR(MaquinaVirtual *vm) {
     actualizarCC_desplazamiento(vm, resultado, 0, 0);
 }
 
-void ejecutarSYS (MaquinaVirtual *vm){ printf("SYS\n");  /* TODO */ }
-void ejecutarJMP (MaquinaVirtual *vm){ printf("JMP\n");  /* TODO */ }
-void ejecutarJP  (MaquinaVirtual *vm){ printf("JP\n");   /* TODO */ }
-void ejecutarJN  (MaquinaVirtual *vm){ printf("JN\n");   /* TODO */ }
-void ejecutarJZ  (MaquinaVirtual *vm){ printf("JZ\n");   /* TODO */ }
-void ejecutarJC  (MaquinaVirtual *vm){ printf("JC\n");   /* TODO */ }
-void ejecutarJV  (MaquinaVirtual *vm){ printf("JV\n");   /* TODO */ }
-void ejecutarJNP (MaquinaVirtual *vm){ printf("JNP\n");  /* TODO */ }
-void ejecutarJNN (MaquinaVirtual *vm){ printf("JNN\n");  /* TODO */ }
-void ejecutarJNZ (MaquinaVirtual *vm){ printf("JNZ\n");  /* TODO */ }
+void ejecutarJMP (MaquinaVirtual *vm){ 
+     int desplazamiento = leerOperando(vm, vm->registros[2]);
+     vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
+}
 
-void ejecutarMOV (MaquinaVirtual *vm){ printf("MOV\n");  /* TODO */ }
+void ejecutarJP  (MaquinaVirtual *vm){
+    unsigned cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+    int Z = (cc >> 30) & 1;
+
+    if (N == 0 && Z == 0){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
+    }
+}
+
+void ejecutarJN  (MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+
+    if (N == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+ }
+void ejecutarJZ  (MaquinaVirtual *vm){
+     unsigned int cc = vm->registros[REG_CC];
+    int Z = (cc >> 30) & 1;
+
+    if (Z == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+void ejecutarJC(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int C = (cc >> 29) & 1;
+
+    if (C == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJV(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int V = (cc >> 28) & 1;
+
+    if (V == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJNP(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+    int Z = (cc >> 30) & 1;
+
+    if (N == 1 || Z == 1){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJNN(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int N = (cc >> 31) & 1;
+
+    if (N == 0){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarJNZ(MaquinaVirtual *vm){
+    unsigned int cc = vm->registros[REG_CC];
+    int Z = (cc >> 30) & 1;
+
+    if (Z == 0){
+        int desplazamiento = leerOperando(vm, vm->registros[2]);
+        vm->registros[0] = vm->registros[26] + desplazamiento;
+    }
+}
+
+void ejecutarMOV (MaquinaVirtual *vm){ 
+
+    int valor = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+    int escribioOK=escribirOperando(vm, vm->registros[REG_OP1], valor);
+    if (!escribioOK || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
+
+///aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+}
 void ejecutarCMP (MaquinaVirtual *vm){ printf("CMP\n");  /* TODO */ }
-void ejecutarSHL (MaquinaVirtual *vm){ printf("SHL\n");  /* TODO */ }
-void ejecutarSHR (MaquinaVirtual *vm){ printf("SHR\n");  /* TODO */ }
-void ejecutarSAR (MaquinaVirtual *vm){ printf("SAR\n");  /* TODO */ }
-void ejecutarLDL (MaquinaVirtual *vm){ printf("LDL\n");  /* TODO */ }
-void ejecutarLDH (MaquinaVirtual *vm){ printf("LDH\n");  /* TODO */ }
+
+void ejecutarLDL (MaquinaVirtual *vm){ 
+    int destino=leerOperando(vm,vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+    int operandoB = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+
+    int parteAlta=destino & (0xFFFF0000);
+    int parteBaja= (operandoB & 0xFFFF);
+    int resultado= parteBaja | parteAlta;
+
+    int escribioOk = escribirOperando(vm,vm->registros[REG_OP1],resultado);
+    if (!escribioOk || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
+}
+void ejecutarLDH (MaquinaVirtual *vm){ 
+    int destino=leerOperando(vm,vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+    int operandoB = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+
+    int parteBaja=destino & 0xFFFF;
+    int parteAlta= (operandoB & 0xFFFF)<<16;
+    int resultado= parteBaja | parteAlta;
+
+    
+    int escribioOk = escribirOperando(vm,vm->registros[REG_OP1],resultado);
+    if (!escribioOk || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
+}
 void ejecutarRND (MaquinaVirtual *vm){ printf("RND\n");  /* TODO */ }
+
+void ejecutarSYS (MaquinaVirtual *vm){
+
+    int tipoOp=leerOperando(vm,vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+   
+
+    if (tipoOp==2){     //escribe
+        int ecx = vm->registros[REG_ECX]; // en la parte mas alta tiene cantidad a leer y el la mas baja el tamano
+        if (!vm->corriendo) return;
+        int eax=vm->registros[REG_EAX];
+        if (!vm->corriendo) return;
+        int edx=vm->registros[REG_EDX];
+        if (!vm->corriendo) return;
+        int cantidad = ecx & 0xFFFF;
+        int tamano  = (ecx >>16) &0xFFFF;
+
+
+
+
+        
+        for (int i = 0; i < cantidad; i++){
+           
+            uint32_t direccionLogica = edx + i * tamano;
+            int direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+            if (direccionFisica == -1){ vm->corriendo = 0; return; }
+            
+            int valor = 0;
+            if (!leerMemoria(vm, direccionLogica, tamano, &valor)){ vm->corriendo = 0; return; }
+            printf("[%04X]: ",direccionFisica );
+            if (eax & 0x10){
+                char binario[33];
+                obtenerBinario((unsigned int)valor, binario);
+                printf("0b%s ", binario);
+            }
+            if (eax & 0x08) printf("0x%x ", valor); //hexa y octal escriben de una
+            if (eax & 0x04) printf("0o%o ", valor); //no se hace case porque pueden pedir que escriba de mas de una forma
+            if (eax & 0x02){ /* caracteres: un char por byte, MSB primero */
+                    for (int b = tamano; b > 0; b--){
+                        unsigned char c = (unsigned char)(valor >> (8*(b-1)));
+                        printf("%c", (c >= 32 && c <= 126) ? c : '.');  // que sea imprimible
+                    }
+                    printf(" ");
+                }
+
+           
+            if (eax & 0x01) printf("%d ", valor);  //escrive decimal
+        }
+    }
+}
