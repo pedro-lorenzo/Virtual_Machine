@@ -1,5 +1,6 @@
 #include "tipos.h"
 #include <string.h>
+#include <stdio.h>
 #include "funciones.h"
 #include "instrucciones.h"
 #include <stdlib.h>
@@ -42,6 +43,11 @@ void procesaPrograma( MaquinaVirtual *vm){
             opB=0;
             for (i=0; i<tipoOpB; i++){  //Como el tipo determina la cantidad de bytes del operando, leemos tipoOpB celdas de memoria
                 opB = opB << 8;
+                if (indiceMemoria >= TAM_MEMORIA){
+                    printf("Fallo de segmento\n");
+                    vm->corriendo = 0;
+                    break;
+                }
                 opB += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
@@ -49,6 +55,11 @@ void procesaPrograma( MaquinaVirtual *vm){
             opA=0;
             for (i=0; i<tipoOpA; i++){
                 opA = opA << 8;
+                if (indiceMemoria >= TAM_MEMORIA){
+                    printf("Fallo de segmento\n");
+                    vm->corriendo = 0;
+                    break;
+                }
                 opA += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }

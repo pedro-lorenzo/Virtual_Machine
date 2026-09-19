@@ -16,4 +16,5 @@ int32_t PrepararAccesoMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint
 int32_t escribirOperando(MaquinaVirtual *vm, uint32_t registroOP, int32_t valor);
 int32_t escribirMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t cantidadBytes, int32_t valor);
 void obtenerBinario(unsigned int valor, char *binario);
+void limpiarBufferEntrada();
 #endif

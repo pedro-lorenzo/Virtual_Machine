@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "instrucciones.h"
 #include "instrucciones.h"
 #include "funciones.h"
 #include "Registros.h"
 #include "cc.h"
+#include <errno.h>
 
 /* TABLA DE OPERACIONES
    Se indexa con el opcode de 5 bits (registros[OPC], ya
@@ -255,10 +257,17 @@ void ejecutarNOT(MaquinaVirtual *vm) {
 //  SWAP -- se implementa reutilizando ejecutarXOR tres veces, intercambiando OP1/OP2 entre llamadas.
 
 void ejecutarSWAP(MaquinaVirtual *vm) {
-    uint32_t op1Original, op2Original;
+    uint32_t op1Original, op2Original, valorActual;
 
     op1Original = vm->registros[REG_OP1];
     op2Original = vm->registros[REG_OP2];
+
+    if (op1Original == op2Original) {
+        valorActual = leerOperando(vm, op1Original);
+        if (!vm->corriendo) return;
+        actualizarCC_logica(vm, valorActual);
+        return;
+    }
 
     ejecutarXOR(vm);
     if (!vm->corriendo) return;
@@ -357,6 +366,7 @@ void ejecutarSAR(MaquinaVirtual *vm) {
 
 void ejecutarJMP (MaquinaVirtual *vm){ 
      int desplazamiento = leerOperando(vm, vm->registros[2]);
+     if (!vm->corriendo) return;
      vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
 }
 
@@ -367,6 +377,7 @@ void ejecutarJP  (MaquinaVirtual *vm){
 
     if (N == 0 && Z == 0){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0]= vm->registros[26] + desplazamiento;   // IP = CS + desplazamiento
     }
 }
@@ -377,6 +388,7 @@ void ejecutarJN  (MaquinaVirtual *vm){
 
     if (N == 1){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
  }
@@ -386,6 +398,7 @@ void ejecutarJZ  (MaquinaVirtual *vm){
 
     if (Z == 1){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
 }
@@ -395,6 +408,7 @@ void ejecutarJC(MaquinaVirtual *vm){
 
     if (C == 1){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
 }
@@ -405,6 +419,7 @@ void ejecutarJV(MaquinaVirtual *vm){
 
     if (V == 1){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
 }
@@ -416,6 +431,7 @@ void ejecutarJNP(MaquinaVirtual *vm){
 
     if (N == 1 || Z == 1){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
 }
@@ -426,6 +442,7 @@ void ejecutarJNN(MaquinaVirtual *vm){
 
     if (N == 0){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
 }
@@ -436,24 +453,51 @@ void ejecutarJNZ(MaquinaVirtual *vm){
 
     if (Z == 0){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
+        if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
     }
 }
 
 void ejecutarMOV (MaquinaVirtual *vm){ 
 
-    int valor = leerOperando(vm, vm->registros[REG_OP2]);
+    int32_t valor = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
     int escribioOK=escribirOperando(vm, vm->registros[REG_OP1], valor);
     if (!escribioOK || !vm->corriendo) { 
         vm->corriendo = 0;
         return; 
     }
+    actualizarCC_logica(vm,valor);
+}
 
-///aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+void ejecutarCMP (MaquinaVirtual *vm){
+    int32_t valorA, valorB;
+    int64_t sumaConSigno;
+    uint32_t menosBSinSigno;
+    uint64_t sumaSinSigno;
+    int32_t resultado;
+
+    valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    valorB = leerOperando(vm, vm->registros[REG_OP2]);
+    if (!vm->corriendo) return;
+
+    /* Se calcula como A + (-B) via complemento a 2 
+        por eso comparte el mismo criterio de C y V
+       que ADD. La resta con signo se hace en 64 bits directamente
+       (sin negar B por separado) para no pisar el caso B == INT_MIN,
+       donde -B por si solo ya desborda un int de 32 bits. */
+    sumaConSigno = (int64_t)valorA - (int64_t)valorB;
+
+    /* Para el carry sin signo si hace falta el -B "de verdad", pero
+       calculado en aritmetica unsigned (mod 2^32), que nunca es UB. */
+    menosBSinSigno = (uint32_t)(0u - (uint32_t)valorB);
+    sumaSinSigno = (uint64_t)(uint32_t)valorA + (uint64_t)menosBSinSigno;
+
+    resultado = (int32_t)sumaConSigno;
+
+    actualizarCC_sumaResta(vm, sumaConSigno, sumaSinSigno, resultado);
 
 }
-void ejecutarCMP (MaquinaVirtual *vm){ printf("CMP\n");  /* TODO */ }
 
 void ejecutarLDL (MaquinaVirtual *vm){ 
     int destino=leerOperando(vm,vm->registros[REG_OP1]);
@@ -488,54 +532,120 @@ void ejecutarLDH (MaquinaVirtual *vm){
         return; 
     }
 }
-void ejecutarRND (MaquinaVirtual *vm){ printf("RND\n");  /* TODO */ }
+void ejecutarRND (MaquinaVirtual *vm){ 
+    int32_t resultado, op2;
+    int escribioOk;
 
-void ejecutarSYS (MaquinaVirtual *vm){
-
-    int tipoOp=leerOperando(vm,vm->registros[REG_OP1]);
+    op2=leerOperando(vm,vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
-   
 
-    if (tipoOp==2){     //escribe
-        int ecx = vm->registros[REG_ECX]; // en la parte mas alta tiene cantidad a leer y el la mas baja el tamano
-        if (!vm->corriendo) return;
-        int eax=vm->registros[REG_EAX];
-        if (!vm->corriendo) return;
-        int edx=vm->registros[REG_EDX];
-        if (!vm->corriendo) return;
-        int cantidad = ecx & 0xFFFF;
-        int tamano  = (ecx >>16) &0xFFFF;
+    if (op2 <= 0)
+        resultado=0;
+    else
+        resultado= rand() % ((int64_t)op2+1);
 
+    escribioOk = escribirOperando(vm,vm->registros[REG_OP1],resultado);
+    if (!escribioOk || !vm->corriendo) { 
+        vm->corriendo = 0;
+        return; 
+    }
+}
 
+void ejecutarSYS(MaquinaVirtual *vm) {
+    int32_t tipoOp, ecx, eax, edx, cantidad, tamano, direccionFisica, valor, i, b;
+    uint32_t direccionLogica;
+    unsigned char c;
+    char binario[33];
+    char buffer[64];
+    char *finConversion;
+    long valorLargo;
+    int okEscritura;
 
+    tipoOp = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
 
-        
-        for (int i = 0; i < cantidad; i++){
-           
-            uint32_t direccionLogica = edx + i * tamano;
-            int direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
-            if (direccionFisica == -1){ vm->corriendo = 0; return; }
-            
-            int valor = 0;
-            if (!leerMemoria(vm, direccionLogica, tamano, &valor)){ vm->corriendo = 0; return; }
-            printf("[%04X]: ",direccionFisica );
-            if (eax & 0x10){
-                char binario[33];
+    ecx = vm->registros[REG_ECX];
+    eax = vm->registros[REG_EAX];
+    edx = vm->registros[REG_EDX];
+    cantidad = ecx & 0xFFFF;
+    tamano   = (ecx >> 16) & 0xFFFF;
+
+    if (tipoOp == 2)  // WRITE
+        for (i = 0; i < cantidad; i++) {
+            direccionLogica = edx + i * tamano;
+            direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+            if (direccionFisica == -1) { vm->corriendo = 0; return; }
+
+            valor = 0;
+            if (!leerMemoria(vm, direccionLogica, tamano, &valor)) { vm->corriendo = 0; return; }
+            printf("[%04X]: ", direccionFisica);
+
+            if (eax & 0x10) {
                 obtenerBinario((unsigned int)valor, binario);
                 printf("0b%s ", binario);
             }
-            if (eax & 0x08) printf("0x%x ", valor); //hexa y octal escriben de una
-            if (eax & 0x04) printf("0o%o ", valor); //no se hace case porque pueden pedir que escriba de mas de una forma
-            if (eax & 0x02){ /* caracteres: un char por byte, MSB primero */
-                    for (int b = tamano; b > 0; b--){
-                        unsigned char c = (unsigned char)(valor >> (8*(b-1)));
-                        printf("%c", (c >= 32 && c <= 126) ? c : '.');  // que sea imprimible
-                    }
-                    printf(" ");
+            if (eax & 0x08) printf("0x%x ", valor);
+            if (eax & 0x04) printf("0o%o ", valor);
+            if (eax & 0x02) {
+                for (b = tamano; b > 0; b--) {
+                    c = (unsigned char)(valor >> (8 * (b - 1)));
+                    printf("%c", (c >= 32 && c <= 126) ? c : '.');
                 }
-
-           
-            if (eax & 0x01) printf("%d ", valor);  //escrive decimal
+                printf(" ");
+            }
+            if (eax & 0x01) printf("%d ", valor);
         }
-    }
+     else 
+        if (tipoOp == 1) {  // READ
+            for (i = 0; i < cantidad; i++) {
+                direccionLogica = edx + i * tamano;
+                direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+                if (direccionFisica == -1) { vm->corriendo = 0; return; }
+    
+                printf("[%04X]: ", direccionFisica);
+    
+                if (eax == 0x02) {
+                    /* Caracteres: se leen tamano bytes sueltos y se
+                    empaquetan en un solo valor, MSB primero (igual
+                    orden que desempaqueta el WRITE). */
+                    valor = 0;
+                    for (b = 0; b < tamano; b++) {
+                        valor = (valor << 8) | (unsigned char)getchar();
+                    }
+                } else {
+                    /* Decimal (0x01), octal (0x04), hex (0x08) o
+                    binario (0x10): base distinta segun el bit. */
+                    int base;
+                    if (eax == 0x01) 
+                        base = 10;
+                    else 
+                        if (eax == 0x04) 
+                            base = 8;
+                        else 
+                            if (eax == 0x08) 
+                                base = 16;
+                            else    //0x10                
+                                base = 2;   
+    
+                    scanf("%63s", buffer);
+    
+                    errno = 0;
+                    valorLargo = strtol(buffer, &finConversion, base);
+    
+                    /* Ancho + comparacion, mismo patron que en ADD/MUL/SHL:
+                    strtol devuelve long (ancho no garantizado), asi que
+                    hay que chequear el rango de 32 bits a mano ademas
+                    de errno. */
+                    if (errno == ERANGE || valorLargo > INT32_MAX || valorLargo < INT32_MIN) {
+                        printf("Advertencia: valor leido fuera de rango, se trunca\n");
+                    }
+                    valor = (int32_t)valorLargo;
+    
+                    limpiarBufferEntrada();
+                }
+    
+                okEscritura = escribirMemoria(vm, direccionLogica, tamano, valor);
+                if (!okEscritura || !vm->corriendo) { vm->corriendo = 0; return; }
+            }
+        }
 }

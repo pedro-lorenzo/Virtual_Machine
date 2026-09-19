@@ -2,6 +2,7 @@
 #include "tipos.h"
 #include <string.h>
 #include "funciones.h"
+#include <time.h>
 
 int main (int argc, char *argv[]){
     if (argc != 2)
@@ -22,8 +23,11 @@ int main (int argc, char *argv[]){
                 fclose(file);
                 iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros);
                 vm.corriendo = 1;
+                srand(time(NULL)); //Para correcta funcionalidad del RND
                 procesaPrograma(&vm);
             }
+            else
+                printf("No se puede ejecutar el programa\n");
         }
         else
             printf("Error al abrir archivo\n");

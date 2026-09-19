@@ -9,7 +9,7 @@ void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro regi
     segmentos[0] = cabecera.tamano;                                 //Inicia el segmento de código
     segmentos[1] = cabecera.tamano;
     segmentos[1]= segmentos[1] << 16;
-    segmentos[1] = segmentos[1] | TAM_MEMORIA - cabecera.tamano;    //Inicia parte alta y baja del Segmento de datos
+    segmentos[1] = segmentos[1] | (TAM_MEMORIA - cabecera.tamano);    //Inicia parte alta y baja del Segmento de datos
 
     for (i=2; i<CANT_SEGMENTOS; i++)
         segmentos[i] = -1;
@@ -112,7 +112,7 @@ int32_t leerMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t canti
         return 0;
     else{
         uint32_t valor = 0;
-        for (int32_t i=0; i < cantidadBytes; i++){
+        for (uint32_t i=0; i < cantidadBytes; i++){
             valor = valor << 8;
             valor = valor | vm->memoria.datos[direccionFisica + i];
         }
@@ -132,6 +132,7 @@ int32_t PrepararAccesoMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint
 
     if (direccionFisica == -1){
         vm->corriendo = 0;
+        printf("Fallo de segmento\n");
         return -1;
     }
 
@@ -141,6 +142,7 @@ int32_t PrepararAccesoMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint
 
     if (cantidadBytes == 0 || cantidadBytes > tamanoSegmento || desplazamiento > tamanoSegmento - cantidadBytes || cantidadBytes > 4){
         vm->corriendo = 0;
+        printf("Fallo de segmento\n");
         return -1;
     }
 
@@ -208,4 +210,9 @@ void obtenerBinario(unsigned int valor, char *binario){
     }
 
     strcpy(binario, &temp[i]);   // copio desde donde empezaron los digitos reales
+}
+void limpiarBufferEntrada() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+        ; //descarta
 }
