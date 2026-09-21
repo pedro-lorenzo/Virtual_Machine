@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "instrucciones.h"
-#include "instrucciones.h"
 #include "funciones.h"
 #include "Registros.h"
 #include "cc.h"
@@ -574,7 +573,7 @@ void ejecutarSYS(MaquinaVirtual *vm) {
         for (i = 0; i < cantidad; i++) {
             direccionLogica = edx + i * tamano;
             direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
-            if (direccionFisica == -1) { vm->corriendo = 0; return; }
+            if (direccionFisica == -1) { printf("Fallo de segmento\n"); vm->corriendo = 0; return; }
 
             valor = 0;
             if (!leerMemoria(vm, direccionLogica, tamano, &valor)) { vm->corriendo = 0; return; }
@@ -600,7 +599,7 @@ void ejecutarSYS(MaquinaVirtual *vm) {
             for (i = 0; i < cantidad; i++) {
                 direccionLogica = edx + i * tamano;
                 direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
-                if (direccionFisica == -1) { vm->corriendo = 0; return; }
+                if (direccionFisica == -1) { printf("Fallo de segmento\n"); vm->corriendo = 0; return; }
     
                 printf("[%04X]: ", direccionFisica);
     
