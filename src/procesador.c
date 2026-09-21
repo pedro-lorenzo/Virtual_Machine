@@ -12,7 +12,6 @@ void procesaPrograma( MaquinaVirtual *vm){
     uint32_t opB, opA;
 
     
-//Mismo problema con vm->memoria[indiceMemoria] — memoria es un struct que envuelve datos[TAM_MEMORIA], así que es vm->memoria.datos[indiceMemoria].
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
         if (direccionFisica==-1 || direccionFisica>TAM_MEMORIA){    //Condiciones de corte
