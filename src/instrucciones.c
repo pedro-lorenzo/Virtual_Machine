@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "instrucciones.h"
-#include "instrucciones.h"
 #include "funciones.h"
 #include "Registros.h"
 #include "cc.h"
@@ -67,7 +66,7 @@ void instruccionInvalida(MaquinaVirtual *vm){
 }
 
 void ejecutarSTOP(MaquinaVirtual *vm){
-    printf("STOP\n");
+    printf("\n");
     vm->registros[0] = -1;   // IP = 0xFFFFFFFF
     vm->corriendo = 0;
 }
@@ -574,7 +573,7 @@ void ejecutarSYS(MaquinaVirtual *vm) {
         for (i = 0; i < cantidad; i++) {
             direccionLogica = edx + i * tamano;
             direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
-            if (direccionFisica == -1) { vm->corriendo = 0; return; }
+            if (direccionFisica == -1) { printf("Fallo de segmento\n"); vm->corriendo = 0; return; }
 
             valor = 0;
             if (!leerMemoria(vm, direccionLogica, tamano, &valor)) { vm->corriendo = 0; return; }
@@ -582,25 +581,25 @@ void ejecutarSYS(MaquinaVirtual *vm) {
 
             if (eax & 0x10) {
                 obtenerBinario((unsigned int)valor, binario);
-                printf("0b%s ", binario);
+                printf("0b%s \n", binario);
             }
-            if (eax & 0x08) printf("0x%x ", valor);
-            if (eax & 0x04) printf("0o%o ", valor);
+            if (eax & 0x08) printf("0x%x \n", valor);
+            if (eax & 0x04) printf("0o%o \n", valor);
             if (eax & 0x02) {
                 for (b = tamano; b > 0; b--) {
                     c = (unsigned char)(valor >> (8 * (b - 1)));
-                    printf("%c", (c >= 32 && c <= 126) ? c : '.');
+                    printf("%c \n", (c >= 32 && c <= 126) ? c : '.');
                 }
                 printf(" ");
             }
-            if (eax & 0x01) printf("%d ", valor);
+            if (eax & 0x01) printf("%d \n", valor);
         }
      else 
         if (tipoOp == 1) {  // READ
             for (i = 0; i < cantidad; i++) {
                 direccionLogica = edx + i * tamano;
                 direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
-                if (direccionFisica == -1) { vm->corriendo = 0; return; }
+                if (direccionFisica == -1) { printf("Fallo de segmento\n"); vm->corriendo = 0; return; }
     
                 printf("[%04X]: ", direccionFisica);
     

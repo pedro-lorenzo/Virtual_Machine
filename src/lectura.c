@@ -1,12 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "tipos.h"
 #include <string.h>
 #include "funciones.h"
 #include <time.h>
-#include <stdlib.h>
+#include <stdint.h>
 
+void disassembler(MaquinaVirtual *vm);
 int main (int argc, char *argv[]){
-    if (argc != 2)
+    if (argc < 2 || argc > 3)
         printf("No se pasaron los parametros esperados\n");
     else{
         FILE *file;
@@ -22,7 +24,10 @@ int main (int argc, char *argv[]){
                     fread(&vm.memoria.datos[i], 1, sizeof(uint8_t), file);
                 }
                 fclose(file);
+                
                 iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros);
+                if (argc == 3 && strcmp(argv[2], "-d") == 0)
+                    disassembler(&vm);
                 vm.corriendo = 1;
                 srand(time(NULL)); //Para correcta funcionalidad del RND
                 procesaPrograma(&vm);
