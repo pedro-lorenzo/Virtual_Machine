@@ -3,6 +3,7 @@
 #include <string.h>
 #include "funciones.h"
 #include <time.h>
+#include <stdlib.h>
 
 int main (int argc, char *argv[]){
     if (argc != 2)

@@ -40,6 +40,11 @@ void procesaPrograma( MaquinaVirtual *vm){
             
             
             indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
+            if (direccionFisica==-1 || direccionFisica>TAM_MEMORIA){    //Condiciones de corte
+                vm->registros[0] = -1;
+                vm->corriendo = 0;
+                continue; //vuelve a chequear el while para salir
+            }
             opB=0;
             for (i=0; i<tipoOpB; i++){  //Como el tipo determina la cantidad de bytes del operando, leemos tipoOpB celdas de memoria
                 opB = opB << 8;
