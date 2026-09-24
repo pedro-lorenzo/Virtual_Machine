@@ -14,23 +14,25 @@ void procesaPrograma( MaquinaVirtual *vm){
 
     
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
-        direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
-        if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA){    //Condiciones de corte
-            printf("Error: IP fuera del segmento de codigo\n");
-            vm->registros[0] = -1;
+        direccionFisica=direccionLogicaAFisica(vm->registros[REG_IP], vm->segmentos);
+        if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA || ((uint32_t)vm->registros[REG_IP] >> 16) != 0){    //Condiciones de corte
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
         }
         instruccion= vm->memoria.datos[direccionFisica];
 
         vm->registros[1]= instruccion & 0x1F;
+
+        vm->registros[REG_OP1] = 0;
+        vm->registros[REG_OP2] = 0;
+
         if (vm->registros[REG_OPC] >= 0x0B && vm->registros[REG_OPC] <= 0x0E){ //verifica si esta dentro de las operaciones invalidas.
             instruccionInvalida(vm);
             continue;
         }
-        cantOp= cantidadOperandosALeer(vm->registros[1]);
+        cantOp= cantidadOperandosALeer(vm->registros[REG_OPC]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
-            tabla_instrucciones[vm->registros[1]](vm);
+            tabla_instrucciones[vm->registros[REG_OPC]](vm);
         }
         
         else{
@@ -54,7 +56,6 @@ void procesaPrograma( MaquinaVirtual *vm){
             
             indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
             if (indiceMemoria==-1 || indiceMemoria>=TAM_MEMORIA){    //Condiciones de corte
-                vm->registros[0] = -1;
                 vm->corriendo = 0;
                 continue; //vuelve a chequear el while para salir
             }
