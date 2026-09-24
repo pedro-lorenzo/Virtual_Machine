@@ -19,4 +19,3 @@ FIN:		MOV [DS], EFX
 			LDH ECX, 4
 			MOV EAX, 1
 			SYS 2
-			STOP
