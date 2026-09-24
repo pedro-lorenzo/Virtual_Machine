@@ -81,12 +81,12 @@ void disassembler(MaquinaVirtual *vm){
         }
         instruccion= vm->memoria.datos[direccionFisica];
 
-        vm->registros[1]= instruccion & 0x1F;
-        cantOp= cantidadOperandosALeer(vm->registros[1]);
+        vm->registros[REG_OPC]= instruccion & 0x1F;
+        cantOp= cantidadOperandosALeer(vm->registros[REG_OPC]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
             printf("[%04X] ", direccionFisica);
             printf("%02X ", vm->memoria.datos[direccionFisica]);
-            printf("| %s\n", buscaMNEM(vm->registros[1]));
+            printf("| %s\n", buscaMNEM(vm->registros[REG_OPC]));
             pos += 1;
         }
         
@@ -142,7 +142,7 @@ void disassembler(MaquinaVirtual *vm){
             }
             pos += tamanoInstruccion;
             
-            printf("| %s ",buscaMNEM(vm->registros[1]));
+            printf("| %s ",buscaMNEM(vm->registros[REG_OPC]));
 
             imprimirOperando(tipoOpA,opA);
             if (cantOp==2){

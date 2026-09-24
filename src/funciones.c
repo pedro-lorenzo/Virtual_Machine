@@ -14,11 +14,11 @@ void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro regi
     for (i=2; i<CANT_SEGMENTOS; i++)
         segmentos[i] = -1;
 
-    registros[26] = 0x00000000;  //Inicializacion CS
-    registros[27] = 0x00010000; //Inicializacion DS
-    registros[0] = registros[26]; //Inicializamos IP con CS
+    registros[REG_CS] = 0x00000000;  //Inicializacion CS
+    registros[REG_DS] = 0x00010000; //Inicializacion DS
+    registros[REG_IP] = registros[REG_CS]; //Inicializamos IP con CS
 
-    for (i=10; i<16; i++)  //inicia los de proposito general
+    for (i=REG_EAX; i<=REG_EFX; i++)  //inicia los de proposito general
         registros[i] = 0;
 }
 int32_t cantidadOperandosALeer(int32_t codigo) {

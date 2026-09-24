@@ -1,10 +1,6 @@
 #include <stdint.h>
 #include "cc.h"
 #include "Registros.h"
-#define BIT_N 31
-#define BIT_Z 30
-#define BIT_C 29
-#define BIT_V 28
 
 static void setCC(MaquinaVirtual *vm, int32_t N, int32_t Z, int32_t C, int32_t V) {
     vm->registros[REG_CC] = (N & 1) ? INT32_MIN : 0;

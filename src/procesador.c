@@ -14,18 +14,18 @@ void procesaPrograma( MaquinaVirtual *vm){
 
     
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
-        direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
+        direccionFisica=direccionLogicaAFisica(vm->registros[REG_IP], vm->segmentos);
         if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA){    //Condiciones de corte
-            vm->registros[0] = -1;
+            vm->registros[REG_IP] = -1;
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
         }
         instruccion= vm->memoria.datos[direccionFisica];
 
-        vm->registros[1]= instruccion & 0x1F;
-        cantOp= cantidadOperandosALeer(vm->registros[1]);
+        vm->registros[REG_OPC]= instruccion & 0x1F;
+        cantOp= cantidadOperandosALeer(vm->registros[REG_OPC]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
-            tabla_instrucciones[vm->registros[1]](vm);
+            tabla_instrucciones[vm->registros[REG_OPC]](vm);
         }
         
         else{
@@ -47,9 +47,9 @@ void procesaPrograma( MaquinaVirtual *vm){
                 return;
             }
             
-            indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
+            indiceMemoria=direccionLogicaAFisica(vm->registros[REG_IP]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
             if (indiceMemoria==-1 || indiceMemoria>=TAM_MEMORIA){    //Condiciones de corte
-                vm->registros[0] = -1;
+                vm->registros[REG_IP] = -1;
                 vm->corriendo = 0;
                 continue; //vuelve a chequear el while para salir
             }
@@ -83,10 +83,10 @@ void procesaPrograma( MaquinaVirtual *vm){
             if (!vm->corriendo)
                 continue;
 
-            vm->registros[0] += tamanoInstruccion;
-            vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
-            vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
-            tabla_instrucciones[vm->registros[1]](vm);
+            vm->registros[REG_IP] += tamanoInstruccion;
+            vm->registros[REG_OP1] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
+            vm->registros[REG_OP2] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
+            tabla_instrucciones[vm->registros[REG_OPC]](vm);
         
         }
     }

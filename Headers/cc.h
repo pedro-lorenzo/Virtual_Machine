@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include "tipos.h"
 
+#define BIT_N 31
+#define BIT_Z 30
+#define BIT_C 29
+#define BIT_V 28
 
 void actualizarCC_sumaResta(MaquinaVirtual *vm, int64_t sumaConSigno, uint64_t sumaSinSigno, int32_t resultado);
 
