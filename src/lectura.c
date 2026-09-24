@@ -14,17 +14,29 @@ int main (int argc, char *argv[]){
         FILE *file;
         file = fopen(argv[1], "rb");
         Cabecera cabecera;
-        MaquinaVirtual vm;
+        MaquinaVirtual vm = {0};
 
         if (file != NULL){
-            fread(&cabecera, 1, sizeof(cabecera), file);
+            if (fread(&cabecera, 1, sizeof(cabecera), file) != sizeof(cabecera)){
+                printf("Error: cabecera incompleta\n");
+                fclose(file);
+                return 1;
+            }
             cabecera.tamano = (cabecera.tamano << 8) | (cabecera.tamano >> 8);
+            if (cabecera.tamano > TAM_MEMORIA){
+                printf("Error: el programa no entra en la memoria.");
+                fclose(file);
+                return 1;
+            }
             if (memcmp(cabecera.identificador, "VMX26", 5) == 0 && cabecera.version == 1){       // memcmp compara exactamente los 5 bytes, ya que identificador no es una cadena
                 for (int32_t i = 0; i < cabecera.tamano; i++){
-                    fread(&vm.memoria.datos[i], 1, sizeof(uint8_t), file);
+                    if (!fread(&vm.memoria.datos[i], 1, sizeof(uint8_t), file)){
+                        printf("Error: archivo VMX incompleto\n");
+                        fclose(file);
+                        return 1;
+                    }
                 }
                 fclose(file);
-                
                 iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros);
                 if (argc == 3 && strcmp(argv[2], "-d") == 0)
                     disassembler(&vm);
@@ -32,8 +44,11 @@ int main (int argc, char *argv[]){
                 srand(time(NULL)); //Para correcta funcionalidad del RND
                 procesaPrograma(&vm);
             }
-            else
+            else{
                 printf("No se puede ejecutar el programa\n");
+                fclose(file);
+                return 1;
+            }
         }
         else
             printf("Error al abrir archivo\n");

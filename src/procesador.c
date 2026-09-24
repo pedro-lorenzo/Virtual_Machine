@@ -4,6 +4,7 @@
 #include "funciones.h"
 #include "instrucciones.h"
 #include <stdlib.h>
+#include "Registros.h"
 
 void procesaPrograma( MaquinaVirtual *vm){
 
@@ -14,7 +15,7 @@ void procesaPrograma( MaquinaVirtual *vm){
     
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
-        if (direccionFisica==-1 || direccionFisica>TAM_MEMORIA){    //Condiciones de corte
+        if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA){    //Condiciones de corte
             vm->registros[0] = -1;
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
@@ -37,9 +38,17 @@ void procesaPrograma( MaquinaVirtual *vm){
                 tipoOpA = (instruccion & 0b00110000) >> 4;
             }
             
+            uint32_t tamanoInstruccion = 1 + (uint32_t)tipoOpA + (uint32_t)tipoOpB;   // 1 byte del opcode + los operandos
+            uint32_t tamanoCodigo = (uint32_t)vm->segmentos[0] & 0xFFFFu;
+            uint32_t offsetIP = (uint32_t)vm->registros[REG_IP] & 0xFFFFu;
+            if (offsetIP >= tamanoCodigo || tamanoInstruccion > tamanoCodigo - offsetIP) {
+                printf("Error: instruccion incompleta\n");
+                vm->corriendo = 0;
+                return;
+            }
             
             indiceMemoria=direccionLogicaAFisica(vm->registros[0]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
-            if (direccionFisica==-1 || direccionFisica>TAM_MEMORIA){    //Condiciones de corte
+            if (indiceMemoria==-1 || indiceMemoria>=TAM_MEMORIA){    //Condiciones de corte
                 vm->registros[0] = -1;
                 vm->corriendo = 0;
                 continue; //vuelve a chequear el while para salir
@@ -56,6 +65,9 @@ void procesaPrograma( MaquinaVirtual *vm){
                 indiceMemoria++;
             }
             
+            if (!vm->corriendo)
+                continue;
+
             opA=0;
             for (i=0; i<tipoOpA; i++){
                 opA = opA << 8;
@@ -67,12 +79,15 @@ void procesaPrograma( MaquinaVirtual *vm){
                 opA += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
-        int32_t tamanoInstruccion = 1 + tipoOpA + tipoOpB;   // 1 byte del opcode + los operandos
-        vm->registros[0] += tamanoInstruccion;
-        vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
-        vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
-        tabla_instrucciones[vm->registros[1]](vm);
+
+            if (!vm->corriendo)
+                continue;
+
+            vm->registros[0] += tamanoInstruccion;
+            vm->registros[2] = (tipoOpA << 24) | (opA & 0x00FFFFFF);   // OP1
+            vm->registros[3] = (tipoOpB << 24) | (opB & 0x00FFFFFF);   // OP2
+            tabla_instrucciones[vm->registros[1]](vm);
         
-    }
+        }
     }
 }

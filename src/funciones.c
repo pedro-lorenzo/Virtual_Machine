@@ -51,6 +51,12 @@ int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos) {
     base = ((uint32_t)segmento) >> 16;
     tamano = ((uint32_t)segmento) & 0xFFFF;
 
+    if (base > TAM_MEMORIA)
+        return -1;
+
+    if (tamano > TAM_MEMORIA - base)
+        return -1;
+
     if (desplazamiento >= tamano) {
         return -1;
     }
@@ -73,7 +79,7 @@ int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP){
             valor = valor >> 16;
             return valor;
         }
-        else{                  //Memoria
+        else if (tipo==3){                  //Memoria
             codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
             desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
         
@@ -90,6 +96,10 @@ int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP){
                 return 0;
 
             return valor;
+        } else{
+            printf("Tipo de operando invalido\n");
+            vm->corriendo = 0;
+            return 0;
         }
 }
 

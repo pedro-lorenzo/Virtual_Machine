@@ -80,6 +80,7 @@ void ejecutarADD(MaquinaVirtual *vm) {
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -104,6 +105,7 @@ void ejecutarSUB(MaquinaVirtual *vm) {
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -134,6 +136,7 @@ void ejecutarMUL(MaquinaVirtual *vm) {
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -155,6 +158,7 @@ void ejecutarDIV(MaquinaVirtual *vm) {
     int64_t cocienteAmplio;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -195,6 +199,7 @@ void ejecutarAND(MaquinaVirtual *vm) {
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -211,6 +216,7 @@ void ejecutarOR(MaquinaVirtual *vm) {
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -227,6 +233,7 @@ void ejecutarXOR(MaquinaVirtual *vm) {
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -293,9 +300,16 @@ void ejecutarSHL(MaquinaVirtual *vm) {
     uint64_t productoSinSigno;
  
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     n = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
  
+    if (n < 0) {
+        printf("Error: desplazamiento negativo\n");
+        vm->corriendo = 0;
+        return;
+    }
+
     if (n >= 32) {
         resultado = 0;
         C = (valorA != 0) ? 1 : 0;
@@ -325,8 +339,15 @@ void ejecutarSHR(MaquinaVirtual *vm) {
     int escribioOk;
  
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     n = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
+
+    if (n < 0) {
+        printf("Error: desplazamiento negativo\n");
+        vm->corriendo = 0;
+        return;
+    }
  
     if (n >= 32)
         resultado = 0;
@@ -349,9 +370,16 @@ void ejecutarSAR(MaquinaVirtual *vm) {
     int escribioOk;
  
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     n = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
  
+    if (n < 0) {
+        printf("Error: desplazamiento negativo\n");
+        vm->corriendo = 0;
+        return;
+    }
+
     if (n >= 32)
         resultado = (valorA < 0) ? -1 : 0;
     else
@@ -477,6 +505,7 @@ void ejecutarCMP (MaquinaVirtual *vm){
     int32_t resultado;
 
     valorA = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
     valorB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
@@ -520,9 +549,9 @@ void ejecutarLDH (MaquinaVirtual *vm){
     int operandoB = leerOperando(vm, vm->registros[REG_OP2]);
     if (!vm->corriendo) return;
 
-    int parteBaja=destino & 0xFFFF;
-    int parteAlta= (operandoB & 0xFFFF)<<16;
-    int resultado= parteBaja | parteAlta;
+    int parteBaja=(uint32_t)destino & 0xFFFFu;
+    int parteAlta= ((uint32_t)operandoB & 0xFFFFu)<<16;
+    int resultado= (int32_t)(parteBaja | parteAlta);
 
     
     int escribioOk = escribirOperando(vm,vm->registros[REG_OP1],resultado);
@@ -626,7 +655,11 @@ void ejecutarSYS(MaquinaVirtual *vm) {
                             else    //0x10                
                                 base = 2;   
     
-                    scanf("%63s", buffer);
+                    if (scanf("%63s", buffer) != 1){
+                        printf("Error al leer la entrada");
+                        vm->corriendo = 0;
+                        return;
+                    }
     
                     errno = 0;
                     valorLargo = strtol(buffer, &finConversion, base);

@@ -75,7 +75,7 @@ void disassembler(MaquinaVirtual *vm){
     
     while(pos<tamanoCodigo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         direccionFisica=direccionLogicaAFisica(pos, vm->segmentos);
-        if (direccionFisica==-1 || direccionFisica>TAM_MEMORIA){    //Condiciones de corte
+        if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA){    //Condiciones de corte
             pos=tamanoCodigo;
             continue; //vuelve a chequear el while para salir
         }
@@ -100,8 +100,18 @@ void disassembler(MaquinaVirtual *vm){
                 tipoOpA = (instruccion & 0b00110000) >> 4;
             }
             
-            
+            uint32_t tamanoInstruccion = 1 + (uint32_t)tipoOpA + (uint32_t)tipoOpB;
+
+            if (tamanoInstruccion > tamanoCodigo - pos) {
+                printf("Error: instruccion incompleta\n");
+                return;
+            }
+
             indiceMemoria=direccionLogicaAFisica(pos+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
+            if (indiceMemoria < 0 ||indiceMemoria >= TAM_MEMORIA) {
+                printf("Error: instruccion incompleta\n");
+                return;
+            }
             printf("[%04X] ", direccionFisica);
             
 
@@ -110,8 +120,7 @@ void disassembler(MaquinaVirtual *vm){
                 opB = opB << 8;
                 if (indiceMemoria >= TAM_MEMORIA){
                     printf("Fallo de segmento\n");
-                    pos=tamanoCodigo;
-                    break;
+                    return;
                 }
                 opB += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
@@ -122,14 +131,13 @@ void disassembler(MaquinaVirtual *vm){
                 opA = opA << 8;
                 if (indiceMemoria >= TAM_MEMORIA){
                     printf("Fallo de segmento\n");
-                    pos=tamanoCodigo;
-                    break;
+                    return;
                 }
                 opA += vm->memoria.datos[indiceMemoria]; 
                 indiceMemoria++;
             }
-            int32_t tamanoInstruccion = 1 + tipoOpA + tipoOpB;   // 1 byte del opcode + los operandos
-            for(i=0;i<tamanoInstruccion;i++){
+            
+            for(i=0;i<(int32_t)tamanoInstruccion;i++){
                 printf("%02X ", vm->memoria.datos[direccionFisica+i]);
             }
             pos += tamanoInstruccion;
