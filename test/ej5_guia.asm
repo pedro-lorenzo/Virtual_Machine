@@ -1,0 +1,46 @@
+		MOV EAX, 1
+		LDL ECX, 1
+		LDH ECX, 4
+		MOV EDX, DS
+		SYS 1
+		MOV EBX, [DS]
+		CMP EBX, 0	
+		JN ERROR
+    		JZ ES_CERO
+    		MOV EAX, 0
+    		MOV ECX, EBX
+    		SUB ECX, 1
+    		MOV [DS+4], ECX
+OTRO:		CMP ECX, 0
+		JZ SIGUE
+		ADD EAX, EBX
+		SUB ECX, 1
+		JMP OTRO
+SIGUE:		SUB [DS+4], 1
+		MOV ECX, [DS+4]
+		MOV EBX, EAX
+		CMP ECX, 1
+		JZ FIN
+		MOV EAX, 0
+		JMP OTRO
+ERROR:		MOV [DS+20], 'E'
+		MOV [DS+21], 'R'
+		MOV [DS+22], 'R'
+		MOV [DS+23], 'O'
+		MOV [DS+24], 'R'
+		MOV EDX, DS
+		ADD EDX, 20
+		LDL ECX, 5
+		LDH ECX, 1
+		MOV EAX, 0x02
+		SYS 0x02
+		STOP
+ES_CERO:	MOV EAX, 1
+FIN:		MOV [DS+4], EAX
+		MOV EDX, DS
+		ADD EDX, 4
+		MOV EAX, 1
+		LDL ECX, 1
+		LDH ECX, 4
+		SYS 2
+		STOP

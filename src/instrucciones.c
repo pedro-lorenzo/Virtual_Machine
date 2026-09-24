@@ -5,6 +5,7 @@
 #include "Registros.h"
 #include "cc.h"
 #include <errno.h>
+#include <string.h>
 
 /* TABLA DE OPERACIONES
    Se indexa con el opcode de 5 bits (registros[OPC], ya
@@ -588,6 +589,10 @@ void ejecutarSYS(MaquinaVirtual *vm) {
     char *finConversion;
     long valorLargo;
     int okEscritura;
+    int32_t valorDecimal;
+    const char *separador;
+    uint32_t acumulado;
+    int ch, finLinea;
 
     tipoOp = leerOperando(vm, vm->registros[REG_OP1]);
     if (!vm->corriendo) return;
@@ -606,22 +611,41 @@ void ejecutarSYS(MaquinaVirtual *vm) {
 
             valor = 0;
             if (!leerMemoria(vm, direccionLogica, tamano, &valor)) { vm->corriendo = 0; return; }
+
+            // Para el decimal se extiende el signo de la celda: si la celda es de 1 o 2 bytes, su bit mas alto es el bit de signo. 
+
+            valorDecimal = valor;
+            if (tamano < 4)
+                valorDecimal = (int32_t)((uint32_t)valor << (32 - 8 * tamano)) >> (32 - 8 * tamano);
+
             printf("[%04X]: ", direccionFisica);
+            separador = "";
 
             if (eax & 0x10) {
                 obtenerBinario((unsigned int)valor, binario);
-                printf("0b%s \n", binario);
+                printf("%s0b%s", separador, binario);
+                separador = " ";
             }
-            if (eax & 0x08) printf("0x%x \n", valor);
-            if (eax & 0x04) printf("0o%o \n", valor);
+            if (eax & 0x08) {
+                printf("%s0x%x", separador, (unsigned int)valor);
+                separador = " ";
+            }
+            if (eax & 0x04) {
+                printf("%s0o%o", separador, (unsigned int)valor);
+                separador = " ";
+            }
             if (eax & 0x02) {
+                printf("%s", separador);
                 for (b = tamano; b > 0; b--) {
                     c = (unsigned char)(valor >> (8 * (b - 1)));
-                    printf("%c \n", (c >= 32 && c <= 126) ? c : '.');
+                    printf("%c", (c >= 32 && c <= 126) ? c : '.');
                 }
-                printf(" ");
+                separador = " ";
             }
-            if (eax & 0x01) printf("%d \n", valor);
+            if (eax & 0x01)
+                printf("%s%d", separador, valorDecimal);
+
+            printf("\n");
         }
      else 
         if (tipoOp == 1) {  // READ
@@ -636,10 +660,19 @@ void ejecutarSYS(MaquinaVirtual *vm) {
                     /* Caracteres: se leen tamano bytes sueltos y se
                     empaquetan en un solo valor, MSB primero (igual
                     orden que desempaqueta el WRITE). */
-                    valor = 0;
+                    acumulado = 0;
+                    finLinea = 0;
                     for (b = 0; b < tamano; b++) {
-                        valor = (valor << 8) | (unsigned char)getchar();
+                        ch = finLinea ? 0 : getchar();
+                        if (ch == '\n' || ch == EOF) {   // consume el enter 
+                            finLinea = 1;              
+                            ch = 0;
+                        }
+                        acumulado = (acumulado << 8) | (unsigned char)ch;
                     }
+                    if (!finLinea)
+                        limpiarBufferEntrada();        /* descarta lo que sobre de la linea */
+                    valor = (int32_t)acumulado;
                 } else {
                     /* Decimal (0x01), octal (0x04), hex (0x08) o
                     binario (0x10): base distinta segun el bit. */
@@ -661,8 +694,27 @@ void ejecutarSYS(MaquinaVirtual *vm) {
                         return;
                     }
     
+                    /* Acepta los prefijos 0b y 0o (strtol solo entiende 0x):
+                       se saltea el signo y, si esta el prefijo, se lo borra. */
+                    {
+                        char *digitos = buffer;
+                        if (*digitos == '-' || *digitos == '+')
+                            digitos++;
+                        if (digitos[0] == '0' &&
+                            ((base == 2 && (digitos[1] == 'b' || digitos[1] == 'B')) ||
+                             (base == 8 && (digitos[1] == 'o' || digitos[1] == 'O'))))
+                            memmove(digitos, digitos + 2, strlen(digitos + 2) + 1);
+                    }
+
                     errno = 0;
                     valorLargo = strtol(buffer, &finConversion, base);
+
+                    if (finConversion == buffer || *finConversion != '\0') {
+                        printf("Valor invalido, reingrese\n");
+                        limpiarBufferEntrada();
+                        i--;          /* repite la misma celda */
+                        continue;
+                    }
     
                     /* Ancho + comparacion, mismo patron que en ADD/MUL/SHL:
                     strtol devuelve long (ancho no garantizado), asi que
