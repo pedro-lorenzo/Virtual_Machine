@@ -16,6 +16,7 @@ void procesaPrograma( MaquinaVirtual *vm){
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         direccionFisica=direccionLogicaAFisica(vm->registros[0], vm->segmentos);
         if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA){    //Condiciones de corte
+            printf("Error: IP fuera del segmento de codigo\n");
             vm->registros[0] = -1;
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
@@ -23,6 +24,10 @@ void procesaPrograma( MaquinaVirtual *vm){
         instruccion= vm->memoria.datos[direccionFisica];
 
         vm->registros[1]= instruccion & 0x1F;
+        if (vm->registros[REG_OPC] >= 0x0B && vm->registros[REG_OPC] <= 0x0E){ //verifica si esta dentro de las operaciones invalidas.
+            instruccionInvalida(vm);
+            continue;
+        }
         cantOp= cantidadOperandosALeer(vm->registros[1]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
             tabla_instrucciones[vm->registros[1]](vm);
