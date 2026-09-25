@@ -457,7 +457,7 @@ void ejecutarJNP(MaquinaVirtual *vm){
     int N = (cc >> BIT_N) & 1;
     int Z = (cc >> BIT_Z) & 1;
 
-    if (N == 1 || Z == 1){
+    if (N == 1 || Z==1){
         int desplazamiento = leerOperando(vm, vm->registros[REG_OP1]);
         if (!vm->corriendo) return;
         vm->registros[REG_IP] = vm->registros[REG_CS] + desplazamiento;

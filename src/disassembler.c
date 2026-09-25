@@ -103,13 +103,13 @@ void disassembler(MaquinaVirtual *vm){
             uint32_t tamanoInstruccion = 1 + (uint32_t)tipoOpA + (uint32_t)tipoOpB;
 
             if (tamanoInstruccion > tamanoCodigo - pos) {
-                printf("Error: instruccion incompleta\n");
+                printf("Error: Se sale del segmento de codigo\n");
                 return;
             }
 
             indiceMemoria=direccionLogicaAFisica(pos+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
             if (indiceMemoria < 0 ||indiceMemoria >= TAM_MEMORIA) {
-                printf("Error: instruccion incompleta\n");
+                printf("Error: el indice se sale de la memoria\n");
                 return;
             }
             printf("[%04X] ", direccionFisica);
