@@ -5,6 +5,8 @@
 #include "Registros.h"
 #include <stdint.h>
 #include "funciones.h"
+
+#define MAX_BYTES_INSTRUCCION 7   // 1 byte de opcode + hasta 3 bytes por operando
 static const char *const mnemonicos[32] = {
     [0x00] = "SYS",  [0x01] = "JMP",  [0x02] = "JP",   [0x03] = "JN",
     [0x04] = "JZ",   [0x05] = "JC",   [0x06] = "JV",   [0x07] = "JNP",
@@ -60,7 +62,10 @@ void imprimirOperando(uint32_t tipo,uint32_t operando){
             desplazamiento = desplazamiento << 16;
             desplazamiento = desplazamiento >> 16;
         
-            printf("[%s%+d]", nombreDelRegistro, desplazamiento);
+            if (desplazamiento == 0)
+                printf("[%s]", nombreDelRegistro);
+            else
+                printf("[%s%+d]", nombreDelRegistro, desplazamiento);
             }
             else
                 printf("Operando inexistente");
@@ -86,6 +91,7 @@ void disassembler(MaquinaVirtual *vm){
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
             printf("[%04X] ", direccionFisica);
             printf("%02X ", vm->memoria.datos[direccionFisica]);
+            printf("%*s", 3 * (MAX_BYTES_INSTRUCCION - 1), "");
             printf("| %s\n", buscaMNEM(vm->registros[REG_OPC]));
             pos += 1;
         }
@@ -140,9 +146,10 @@ void disassembler(MaquinaVirtual *vm){
             for(i=0;i<(int32_t)tamanoInstruccion;i++){
                 printf("%02X ", vm->memoria.datos[direccionFisica+i]);
             }
+            printf("%*s", 3 * (MAX_BYTES_INSTRUCCION - (int32_t)tamanoInstruccion), "");
             pos += tamanoInstruccion;
             
-            printf("| %s ",buscaMNEM(vm->registros[REG_OPC]));
+            printf("| %-5s",buscaMNEM(vm->registros[REG_OPC]));
 
             imprimirOperando(tipoOpA,opA);
             if (cantOp==2){

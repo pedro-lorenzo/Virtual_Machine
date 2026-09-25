@@ -689,7 +689,7 @@ void ejecutarSYS(MaquinaVirtual *vm) {
                                 base = 2;   
     
                     if (scanf("%63s", buffer) != 1){
-                        printf("Error al leer la entrada");
+                        printf("Error al leer la entrada\n");
                         vm->corriendo = 0;
                         return;
                     }

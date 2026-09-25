@@ -24,7 +24,7 @@ int main (int argc, char *argv[]){
             }
             cabecera.tamano = (cabecera.tamano << 8) | (cabecera.tamano >> 8);
             if (cabecera.tamano > TAM_MEMORIA){
-                printf("Error: el programa no entra en la memoria.");
+                printf("Error: el programa no entra en la memoria.\n");
                 fclose(file);
                 return 1;
             }
