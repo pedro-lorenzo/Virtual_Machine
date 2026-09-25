@@ -414,7 +414,7 @@ void ejecutarJN  (MaquinaVirtual *vm){
     unsigned int cc = vm->registros[REG_CC];
     int N = (cc >> 31) & 1;
 
-    if (N == 1){
+    if (N == 1 && Z==0){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
         if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
@@ -424,7 +424,7 @@ void ejecutarJZ  (MaquinaVirtual *vm){
      unsigned int cc = vm->registros[REG_CC];
     int Z = (cc >> 30) & 1;
 
-    if (Z == 1){
+    if (Z == 1 && N==0){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
         if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
@@ -457,7 +457,7 @@ void ejecutarJNP(MaquinaVirtual *vm){
     int N = (cc >> 31) & 1;
     int Z = (cc >> 30) & 1;
 
-    if (N == 1 || Z == 1){
+    if ((N == 1 && Z==0)|| (Z == 1 && N==0)){
         int desplazamiento = leerOperando(vm, vm->registros[2]);
         if (!vm->corriendo) return;
         vm->registros[0] = vm->registros[26] + desplazamiento;
