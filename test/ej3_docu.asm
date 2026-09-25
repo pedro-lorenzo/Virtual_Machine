@@ -1,0 +1,10 @@
+MOV [3], 'a'
+MOV [2], 'l'
+MOV [1], 'o'
+MOV [0], 'H'
+MOV EDX, DS
+ADD EDX, 3
+LDH ECX, 1
+LDL ECX, 4
+MOV EAX, 0x12
+SYS 0x2
