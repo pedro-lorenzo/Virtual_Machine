@@ -2,14 +2,31 @@
 #include "funciones.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros){
+int32_t crearMemoria(Memoria *memoria, uint32_t kib){
+    memoria->tamano = kib * 1024;
+    memoria->datos = calloc(memoria->tamano, sizeof(uint8_t));
+    if (memoria->datos == NULL){
+        memoria->tamano = 0;
+        return -1;
+    }
+    return 0;
+}
+
+void liberarMemoria(Memoria *memoria){
+    free(memoria->datos);
+    memoria->datos = NULL;
+    memoria->tamano = 0;
+}
+
+void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros, uint32_t tamMemoria){
     int32_t i;
 
     segmentos[0] = cabecera.tamano;                                 //Inicia el segmento de código
     segmentos[1] = cabecera.tamano;
     segmentos[1]= segmentos[1] << 16;
-    segmentos[1] = segmentos[1] | (TAM_MEMORIA - cabecera.tamano);    //Inicia parte alta y baja del Segmento de datos
+    segmentos[1] = segmentos[1] | (tamMemoria - cabecera.tamano);    //Inicia parte alta y baja del Segmento de datos
 
     for (i=2; i<CANT_SEGMENTOS; i++)
         segmentos[i] = -1;
@@ -28,7 +45,7 @@ int32_t cantidadOperandosALeer(int32_t codigo) {
         return ((codigo & 0xF0) >> 4) + 1;
 }
 
-int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos) {
+int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos, uint32_t tamMemoria) {
     uint32_t codigoSegmento;
     uint32_t desplazamiento;
     int32_t segmento;
@@ -51,10 +68,10 @@ int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos) {
     base = ((uint32_t)segmento) >> 16;
     tamano = ((uint32_t)segmento) & 0xFFFF;
 
-    if (base > TAM_MEMORIA)
+    if (base > tamMemoria)
         return -1;
 
-    if (tamano > TAM_MEMORIA - base)
+    if (tamano > tamMemoria - base)
         return -1;
 
     if (desplazamiento >= tamano) {
@@ -138,7 +155,7 @@ int32_t PrepararAccesoMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint
     cargarLAR(vm, direccionLogica);
     cargarCantidadBytesMAR(vm, cantidadBytes);
 
-    int32_t direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+    int32_t direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos, vm->memoria.tamano);
 
     if (direccionFisica == -1){
         vm->corriendo = 0;

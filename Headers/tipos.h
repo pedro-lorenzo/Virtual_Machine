@@ -3,14 +3,15 @@
 
 #include <stdint.h>
 
-#define TAM_MEMORIA 16384
 #define CANT_REGISTROS 32
 #define CANT_SEGMENTOS 8
 #define MAX_IDENTIFICADOR 5
+#define MEMORIA_KIB_DEFECTO 16
 
 
 typedef struct {
-    uint8_t datos[TAM_MEMORIA];
+    uint8_t *datos;
+    uint32_t tamano;
 } Memoria;
 
 /* Es signed porque los segmentos no utilizados se representan con -1. */

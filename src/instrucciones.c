@@ -606,7 +606,7 @@ void ejecutarSYS(MaquinaVirtual *vm) {
     if (tipoOp == 2)  // WRITE
         for (i = 0; i < cantidad; i++) {
             direccionLogica = edx + i * tamano;
-            direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+            direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos, vm->memoria.tamano);
             if (direccionFisica == -1) { printf("Fallo de segmento\n"); vm->corriendo = 0; return; }
 
             valor = 0;
@@ -651,7 +651,7 @@ void ejecutarSYS(MaquinaVirtual *vm) {
         if (tipoOp == 1) {  // READ
             for (i = 0; i < cantidad; i++) {
                 direccionLogica = edx + i * tamano;
-                direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos);
+                direccionFisica = direccionLogicaAFisica(direccionLogica, vm->segmentos, vm->memoria.tamano);
                 if (direccionFisica == -1) { printf("Fallo de segmento\n"); vm->corriendo = 0; return; }
     
                 printf("[%04X]: ", direccionFisica);

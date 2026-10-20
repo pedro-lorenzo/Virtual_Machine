@@ -14,8 +14,8 @@ void procesaPrograma( MaquinaVirtual *vm){
 
     
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
-        direccionFisica=direccionLogicaAFisica(vm->registros[REG_IP], vm->segmentos);
-        if (direccionFisica==-1 || direccionFisica>=TAM_MEMORIA || ((uint32_t)vm->registros[REG_IP] >> 16) != 0){    //Condiciones de corte
+        direccionFisica=direccionLogicaAFisica(vm->registros[REG_IP], vm->segmentos, vm->memoria.tamano);
+        if (direccionFisica==-1 || (uint32_t)direccionFisica>=vm->memoria.tamano || ((uint32_t)vm->registros[REG_IP] >> 16) != 0){    //Condiciones de corte
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
         }
@@ -54,15 +54,15 @@ void procesaPrograma( MaquinaVirtual *vm){
                 return;
             }
             
-            indiceMemoria=direccionLogicaAFisica(vm->registros[REG_IP]+1, vm->segmentos); //Obtenemos el indice donde comienza el opB
-            if (indiceMemoria==-1 || indiceMemoria>=TAM_MEMORIA){    //Condiciones de corte
+            indiceMemoria=direccionLogicaAFisica(vm->registros[REG_IP]+1, vm->segmentos, vm->memoria.tamano); //Obtenemos el indice donde comienza el opB
+            if (indiceMemoria==-1 || (uint32_t)indiceMemoria>=vm->memoria.tamano){    //Condiciones de corte
                 vm->corriendo = 0;
                 continue; //vuelve a chequear el while para salir
             }
             opB=0;
             for (i=0; i<tipoOpB; i++){  //Como el tipo determina la cantidad de bytes del operando, leemos tipoOpB celdas de memoria
                 opB = opB << 8;
-                if (indiceMemoria >= TAM_MEMORIA){
+                if ((uint32_t)indiceMemoria >= vm->memoria.tamano){
                     printf("Fallo de segmento\n");
                     vm->corriendo = 0;
                     break;
@@ -77,7 +77,7 @@ void procesaPrograma( MaquinaVirtual *vm){
             opA=0;
             for (i=0; i<tipoOpA; i++){
                 opA = opA << 8;
-                if (indiceMemoria >= TAM_MEMORIA){
+                if ((uint32_t)indiceMemoria >= vm->memoria.tamano){
                     printf("Fallo de segmento\n");
                     vm->corriendo = 0;
                     break;

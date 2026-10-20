@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include "tipos.h"
 int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP);
-void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros);
+void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros, uint32_t tamMemoria);
 int32_t cantidadOperandosALeer(int32_t codigo);
-int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos);
+int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos, uint32_t tamMemoria);
 void procesaPrograma(MaquinaVirtual *vm);
 void cargarLAR(MaquinaVirtual *vm, uint32_t direccionLogica);
 void cargarCantidadBytesMAR(MaquinaVirtual *vm, uint32_t cantidadBytes);
@@ -17,4 +17,6 @@ int32_t escribirOperando(MaquinaVirtual *vm, uint32_t registroOP, int32_t valor)
 int32_t escribirMemoria(MaquinaVirtual *vm, uint32_t direccionLogica, uint32_t cantidadBytes, int32_t valor);
 void obtenerBinario(unsigned int valor, char *binario);
 void limpiarBufferEntrada();
+int32_t crearMemoria(Memoria *memoria, uint32_t kib);
+void liberarMemoria(Memoria *memoria);
 #endif

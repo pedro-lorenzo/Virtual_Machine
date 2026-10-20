@@ -23,7 +23,12 @@ int main (int argc, char *argv[]){
                 return 1;
             }
             cabecera.tamano = (cabecera.tamano << 8) | (cabecera.tamano >> 8);
-            if (cabecera.tamano > TAM_MEMORIA){
+            if (crearMemoria(&vm.memoria, MEMORIA_KIB_DEFECTO) == -1){
+                printf("Error: no se pudo reservar la memoria.\n");
+                fclose(file);
+                return 1;
+            }
+            if (cabecera.tamano > vm.memoria.tamano){
                 printf("Error: el programa no entra en la memoria.\n");
                 fclose(file);
                 return 1;
@@ -37,12 +42,13 @@ int main (int argc, char *argv[]){
                     }
                 }
                 fclose(file);
-                iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros);
+                iniciaMaquinaVirtual(cabecera,vm.segmentos,vm.registros, vm.memoria.tamano);
                 if (argc == 3 && strcmp(argv[2], "-d") == 0)
                     disassembler(&vm);
                 vm.corriendo = 1;
                 srand(time(NULL)); //Para correcta funcionalidad del RND
                 procesaPrograma(&vm);
+                liberarMemoria(&vm.memoria);
             }
             else{
                 printf("No se puede ejecutar el programa\n");
