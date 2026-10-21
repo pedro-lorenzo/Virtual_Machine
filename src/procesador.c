@@ -5,6 +5,7 @@
 #include "instrucciones.h"
 #include <stdlib.h>
 #include "Registros.h"
+#include "imagen.h"
 
 void procesaPrograma( MaquinaVirtual *vm){
 
@@ -14,6 +15,7 @@ void procesaPrograma( MaquinaVirtual *vm){
 
     
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
+        vm->breakpointEjecutado = 0;
         direccionFisica=direccionLogicaAFisica(vm->registros[REG_IP], vm->segmentos, vm->memoria.tamano);
         if (direccionFisica==-1 || (uint32_t)direccionFisica>=vm->memoria.tamano || ((uint32_t)vm->registros[REG_IP] >> 16) != 0){    //Condiciones de corte
             vm->corriendo = 0;
@@ -95,5 +97,7 @@ void procesaPrograma( MaquinaVirtual *vm){
             tabla_instrucciones[vm->registros[REG_OPC]](vm);
         
         }
+        if (vm->pasoAPaso && vm->corriendo && !vm->breakpointEjecutado)
+            breakpoint(vm);
     }
 }

@@ -6,6 +6,7 @@
 #include "cc.h"
 #include <errno.h>
 #include <string.h>
+#include "imagen.h"
 
 /* TABLA DE OPERACIONES
    Se indexa con el opcode de 5 bits (registros[OPC], ya
@@ -597,6 +598,10 @@ void ejecutarSYS(MaquinaVirtual *vm) {
     tipoOp = leerOperando(vm, vm->registros[REG_OP1]);
     if (!vm->corriendo) return;
 
+    if (tipoOp == 0xF){
+        breakpoint(vm);
+        return;
+    }
     ecx = vm->registros[REG_ECX];
     eax = vm->registros[REG_EAX];
     edx = vm->registros[REG_EDX];

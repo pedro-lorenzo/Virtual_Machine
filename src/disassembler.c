@@ -20,9 +20,11 @@ static const char *const mnemonicos[32] = {
 static const char *const nombresRegistros[32] = {
     [REG_IP]  = "IP",  [REG_OPC] = "OPC", [REG_OP1] = "OP1", [REG_OP2] = "OP2",
     [REG_LAR] = "LAR", [REG_MAR] = "MAR", [REG_MBR] = "MBR",
+    [REG_SP]  = "SP",  [REG_BP]  = "BP",
     [REG_EAX] = "EAX", [REG_EBX] = "EBX", [REG_ECX] = "ECX", [REG_EDX] = "EDX",
     [REG_EEX] = "EEX", [REG_EFX] = "EFX", [REG_AC]  = "AC",  [REG_CC]  = "CC",
     [REG_CS]  = "CS",  [REG_DS]  = "DS",
+    [REG_ES]  = "ES",  [REG_SS]  = "SS",  [REG_KS]  = "KS",  [REG_PS]  = "PS",
 };
 const char*buscaMNEM(int codigo) {
     if (codigo < 0 || codigo >= 32 || mnemonicos[codigo] == NULL)

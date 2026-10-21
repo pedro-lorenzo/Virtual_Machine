@@ -33,6 +33,10 @@ void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro regi
 
     registros[REG_CS] = 0x00000000;  //Inicializacion CS
     registros[REG_DS] = 0x00010000; //Inicializacion DS
+    registros[REG_ES] = -1;          //Segmentos inexistentes (0xFFFFFFFF)
+    registros[REG_SS] = -1;
+    registros[REG_KS] = -1;
+    registros[REG_PS] = -1;
     registros[REG_IP] = registros[REG_CS]; //Inicializamos IP con CS
 
     for (i=REG_EAX; i<=REG_EFX; i++)  //inicia los de proposito general

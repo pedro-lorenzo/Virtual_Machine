@@ -23,6 +23,9 @@ typedef struct {
     Memoria memoria;
     tSegmento segmentos;
     tRegistro registros;
+    const char *archivoImagen;   // NULL si no se paso .vmi
+    int32_t pasoAPaso;           // 1 = frenar tras cada instruccion
+    int32_t breakpointEjecutado; // 1 si la instruccion en curso fue SYS F
     int corriendo; // 1 = sigue ejecutando, 0 = terminó (STOP o error)
 } MaquinaVirtual;
 
