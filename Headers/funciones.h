@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include "tipos.h"
 int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP);
+uint32_t sectorRegistro(uint32_t operando);       // 0=EAX 1=AL 2=AH 3=AX (sirve tambien para el disassembler)
+uint32_t bytesModificador(uint32_t operando);     // 1 (b), 2 (w) o 4 (l / sin prefijo)
+int32_t extenderSigno(uint32_t valor, uint32_t cantidadBytes);
+uint32_t direccionOperandoMemoria(MaquinaVirtual *vm, uint32_t operando);
 int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera);
 int32_t cantidadOperandosALeer(int32_t codigo);
 int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos, uint32_t tamMemoria);

@@ -15,7 +15,8 @@
    Las 32 posiciones del vector quedan cubiertas:
 
      0x00-0x0A  -> instrucciones de un operando (11)
-     0x0B-0x0E  -> huecos sin usar -> instruccion invalida (4)
+     0x0B-0x0D  -> PUSH, POP, CALL (un operando)
+     0x0E       -> RET (sin operandos)
      0x0F       -> STOP (sin operandos)
      0x10-0x1F  -> instrucciones de dos operandos (16)
 */
@@ -36,11 +37,11 @@ InstruccionFn tabla_instrucciones[32] = {
     [0x09] = ejecutarJNZ,
     [0x0A] = ejecutarNOT,
 
-    // Instrucciones invalidas
-    [0x0B] = instruccionInvalida,
-    [0x0C] = instruccionInvalida,
-    [0x0D] = instruccionInvalida,
-    [0x0E] = instruccionInvalida,
+    // Pila
+    [0x0B] = ejecutarPUSH,
+    [0x0C] = ejecutarPOP,
+    [0x0D] = ejecutarCALL,
+    [0x0E] = ejecutarRET,      // sin operandos
     
     // Dos operandos
     [0x10] = ejecutarMOV,
@@ -71,6 +72,105 @@ void ejecutarSTOP(MaquinaVirtual *vm){
     printf("\n");
     vm->registros[REG_IP] = -1;   // IP = 0xFFFFFFFF
     vm->corriendo = 0;
+}
+
+//  PILA
+/* SP y SS son direcciones logicas con el mismo codigo de segmento en la parte alta,
+   asi que se pueden comparar directamente. Siempre se mueven 4 bytes, en big endian
+   (escribirMemoria/leerMemoria ya lo hacen asi). */
+
+static int apilar(MaquinaVirtual *vm, int32_t valor){
+    uint32_t sp = (uint32_t)vm->registros[REG_SP] - 4;
+    vm->registros[REG_SP] = (int32_t)sp;
+
+    if (vm->registros[REG_SS] == -1 || sp < (uint32_t)vm->registros[REG_SS]){
+        printf("Error: stack overflow\n");
+        vm->corriendo = 0;
+        return 0;
+    }
+    if (!escribirMemoria(vm, sp, 4, valor)){
+        vm->corriendo = 0;
+        return 0;
+    }
+    return 1;
+}
+
+static int desapilar(MaquinaVirtual *vm, int32_t *valor){
+    uint32_t sp = (uint32_t)vm->registros[REG_SP];
+    uint32_t ss = (uint32_t)vm->registros[REG_SS];
+    uint32_t tamanoPila;
+
+    if (ss == 0xFFFFFFFFu || (ss >> 16) >= CANT_SEGMENTOS){
+        printf("Error: stack underflow\n");
+        vm->corriendo = 0;
+        return 0;
+    }
+    tamanoPila = (uint32_t)vm->segmentos[ss >> 16] & 0xFFFFu;
+
+    // underflow: SP fuera del Stack Segment o menos de 4 bytes hasta el final de la pila
+    if ((sp >> 16) != (ss >> 16) || (sp & 0xFFFFu) + 4 > tamanoPila){
+        printf("Error: stack underflow\n");
+        vm->corriendo = 0;
+        return 0;
+    }
+    if (!leerMemoria(vm, sp, 4, valor)){
+        vm->corriendo = 0;
+        return 0;
+    }
+    return 1;
+}
+
+void ejecutarPUSH(MaquinaVirtual *vm){
+    int32_t valor;
+    uint32_t sp = (uint32_t)vm->registros[REG_SP] - 4;
+
+    // 1-2: decrementar SP y controlar overflow antes de leer el operando
+    vm->registros[REG_SP] = (int32_t)sp;
+    if (vm->registros[REG_SS] == -1 || sp < (uint32_t)vm->registros[REG_SS]){
+        printf("Error: stack overflow\n");
+        vm->corriendo = 0;
+        return;
+    }
+    // 3-4: leerOperando ya devuelve el valor extendido a 4 bytes con signo
+    valor = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+    // 5: guardar en el tope (byte mas significativo en SP)
+    if (!escribirMemoria(vm, sp, 4, valor))
+        vm->corriendo = 0;
+}
+
+void ejecutarPOP(MaquinaVirtual *vm){
+    int32_t valor;
+
+    if (!desapilar(vm, &valor)) return;
+    // escribirOperando trunca segun el sector o el modificador del operando
+    if (!escribirOperando(vm, vm->registros[REG_OP1], valor) || !vm->corriendo){
+        vm->corriendo = 0;
+        return;
+    }
+    vm->registros[REG_SP] += 4;
+}
+
+void ejecutarCALL(MaquinaVirtual *vm){
+    int32_t destino;
+    uint32_t ip;
+
+    // PUSH IP (ya apunta a la instruccion siguiente) ...
+    if (!apilar(vm, vm->registros[REG_IP])) return;
+    // ... y JMP: se reemplazan los 2 bytes bajos del IP por el operando
+    destino = leerOperando(vm, vm->registros[REG_OP1]);
+    if (!vm->corriendo) return;
+    ip = (uint32_t)vm->registros[REG_IP];
+    vm->registros[REG_IP] = (int32_t)((ip & 0xFFFF0000u) | ((uint32_t)destino & 0xFFFFu));
+}
+
+void ejecutarRET(MaquinaVirtual *vm){
+    int32_t valor;
+
+    // POP IP. Si la subrutina principal retorna, IP queda en -1 y termina el proceso.
+    if (!desapilar(vm, &valor)) return;
+    vm->registros[REG_IP] = valor;
+    vm->registros[REG_SP] += 4;
 }
 
 //  ARITMETICAS
@@ -581,6 +681,61 @@ void ejecutarRND (MaquinaVirtual *vm){
     }
 }
 
+/* SYS 0 (CLEAR SCREEN): no usa ni modifica registros */
+static void sysClearScreen(void){
+#ifdef _WIN32
+    system("cls");
+#else
+    printf("\033[2J\033[H");
+    fflush(stdout);
+#endif
+}
+
+/* SYS 3 (STRING READ): lee una linea y la guarda byte a byte desde EDX, terminada en '\0'.
+   ECX = cantidad maxima de caracteres (sin contar el '\0'); -1 = sin limite.
+   Lo que exceda el maximo se descarta, para no dejar basura para la proxima lectura.
+   Cada byte pasa por escribirMemoria, que hace el control de segmento. */
+static void sysStringRead(MaquinaVirtual *vm){
+    uint32_t edx = (uint32_t)vm->registros[REG_EDX];
+    int32_t maximo = vm->registros[REG_ECX];
+    int32_t i = 0;
+    int ch;
+
+    while ((ch = getchar()) != '\n' && ch != EOF){
+        if (ch == '\r')                       // por si la entrada viene con fin de linea de Windows
+            continue;
+        if (maximo == -1 || i < maximo){
+            if (!escribirMemoria(vm, edx + i, 1, ch)){
+                limpiarBufferEntrada();       // descarta el resto de la linea
+                vm->corriendo = 0;
+                return;
+            }
+            i++;
+        }
+    }
+    if (!escribirMemoria(vm, edx + i, 1, 0))
+        vm->corriendo = 0;
+}
+
+/* SYS 4 (STRING WRITE): imprime desde EDX hasta encontrar '\0' */
+static void sysStringWrite(MaquinaVirtual *vm){
+    uint32_t edx = (uint32_t)vm->registros[REG_EDX];
+    int32_t c = 0;
+    uint32_t i;
+
+    for (i = 0; ; i++){
+        if (!leerMemoria(vm, edx + i, 1, &c)){
+            fflush(stdout);
+            vm->corriendo = 0;
+            return;
+        }
+        if ((c & 0xFF) == 0)
+            break;
+        putchar(c & 0xFF);
+    }
+    fflush(stdout);
+}
+
 void ejecutarSYS(MaquinaVirtual *vm) {
     int32_t tipoOp, ecx, eax, edx, cantidad, tamano, direccionFisica, valor, i, b;
     uint32_t direccionLogica;
@@ -600,6 +755,18 @@ void ejecutarSYS(MaquinaVirtual *vm) {
 
     if (tipoOp == 0xF){
         breakpoint(vm);
+        return;
+    }
+    if (tipoOp == 0){      // CLEAR SCREEN
+        sysClearScreen();
+        return;
+    }
+    if (tipoOp == 3){      // STRING READ
+        sysStringRead(vm);
+        return;
+    }
+    if (tipoOp == 4){      // STRING WRITE
+        sysStringWrite(vm);
         return;
     }
     ecx = vm->registros[REG_ECX];

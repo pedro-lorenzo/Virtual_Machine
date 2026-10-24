@@ -69,7 +69,7 @@ int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera){
     return 0;
 }
 int32_t cantidadOperandosALeer(int32_t codigo) {
-    if (codigo == 0x0F)
+    if (codigo == 0x0E || codigo == 0x0F)   // RET y STOP no tienen operandos
         return 0;
     else
         return ((codigo & 0xF0) >> 4) + 1;
@@ -111,38 +111,71 @@ int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos, ui
     return (int32_t)(base + desplazamiento);
 }
 
+/* ---- Sectores de registro y modificadores de memoria ----
+   Operando de registro (1 byte):  X | 2 bits sector | 5 bits codigo
+       sector 00 = EAX (4 bytes), 01 = AL (4to byte), 10 = AH (3er byte), 11 = AX (2 bytes)
+   Operando de memoria (3 bytes):  16 bits offset | 3 bits tamano | 5 bits codigo
+       tamano 001 = b (1 byte), 010 = w (2 bytes), 100 = l (4 bytes), 000 = sin prefijo (4 bytes) */
+
+static const uint32_t MASCARA_SECTOR[4]    = {0xFFFFFFFFu, 0x000000FFu, 0x0000FF00u, 0x0000FFFFu};
+static const uint32_t CORRIMIENTO_SECTOR[4] = {0, 0, 8, 0};
+
+uint32_t sectorRegistro(uint32_t operando){
+    return (operando >> 5) & 0x3;
+}
+
+uint32_t bytesModificador(uint32_t operando){
+    uint32_t modificador = (operando >> 5) & 0x7;
+    if (modificador == 1) return 1;
+    if (modificador == 2) return 2;
+    return 4;                       // 100 (l) o 000 (sin prefijo / programas v1)
+}
+
+/* Extiende el signo de un valor de n bytes a 32 bits */
+int32_t extenderSigno(uint32_t valor, uint32_t cantidadBytes){
+    uint32_t corrimiento;
+    if (cantidadBytes >= 4)
+        return (int32_t)valor;
+    corrimiento = 32 - 8 * cantidadBytes;
+    return (int32_t)(valor << corrimiento) >> corrimiento;
+}
+
+/* Arma la direccion logica de un operando de memoria: contenido del registro + offset con signo */
+uint32_t direccionOperandoMemoria(MaquinaVirtual *vm, uint32_t operando){
+    uint32_t codigoRegistro = operando & 0x1F;
+    int32_t desplazamiento = extenderSigno((operando >> 8) & 0xFFFFu, 2);
+    return (uint32_t)vm->registros[codigoRegistro] + desplazamiento;
+}
+
 int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP){
-    int32_t desplazamiento, valor;
-    uint32_t direccionLogica, codigoRegistro, tipo, operando;
+    int32_t valor;
+    uint32_t tipo, operando, sector, contenido, cantidadBytes;
 
     tipo = (registroOP >> 24 )& 0xFF;
     operando = registroOP & 0xFFFFFF; //valor operando codificado
-    
-    if (tipo == 1 )         //Registro
-        return vm->registros[operando & 0x1F];
+
+    if (tipo == 1 ){        //Registro
+        sector = sectorRegistro(operando);
+        contenido = (uint32_t)vm->registros[operando & 0x1F];
+        contenido = (contenido & MASCARA_SECTOR[sector]) >> CORRIMIENTO_SECTOR[sector];
+        if (sector == 3)
+            return extenderSigno(contenido, 2);   // AX
+        if (sector != 0)
+            return extenderSigno(contenido, 1);   // AL o AH
+        return (int32_t)contenido;                // EAX
+    }
     else
         if (tipo == 2){       //Inmediato
-            valor = (int32_t)((operando & 0xFFFFu) << 16);
-            valor = valor >> 16;
-            return valor;
+            return extenderSigno(operando & 0xFFFFu, 2);
         }
         else if (tipo==3){                  //Memoria
-            codigoRegistro = operando & 0x1F;  // 5 bits de mas abajo
-            desplazamiento =(operando >> 8) & 0xFFFF; // los 16 bits de arriba
-        
-            //por si arrastra el signo (igual que en funcion direccion logica a fisica)
-            desplazamiento = desplazamiento << 16;
-            desplazamiento = desplazamiento >> 16;
-        
-            direccionLogica = (uint32_t)vm ->registros[codigoRegistro] + desplazamiento; // construye la direccion logica: segmento(cont del reg) y offset(desplazamiento)
-        
-            //lee los 4 bytes empezando desde la direccion fisica
+            cantidadBytes = bytesModificador(operando);
             valor = 0;
 
-            if (!leerMemoria(vm, direccionLogica,4,&valor))
+            if (!leerMemoria(vm, direccionOperandoMemoria(vm, operando), cantidadBytes, &valor))
                 return 0;
 
-            return valor;
+            return extenderSigno((uint32_t)valor, cantidadBytes);
         } else{
             printf("Tipo de operando invalido\n");
             vm->corriendo = 0;
@@ -214,18 +247,19 @@ int32_t escribirOperando (MaquinaVirtual *vm, uint32_t registroOP, int32_t valor
     uint32_t operando = registroOP & 0xFFFFFFu;
 
     if (tipo == 1){
+        // Reemplaza solo los bits del sector; el resto del registro queda igual (valor truncado)
         uint32_t codigoRegistro = operando & 0x1F;
-        vm->registros[codigoRegistro] = valor;
+        uint32_t sector = sectorRegistro(operando);
+        uint32_t mascara = MASCARA_SECTOR[sector];
+        uint32_t actual = (uint32_t)vm->registros[codigoRegistro];
+        uint32_t nuevo = ((uint32_t)valor << CORRIMIENTO_SECTOR[sector]) & mascara;
+        vm->registros[codigoRegistro] = (int32_t)((actual & ~mascara) | nuevo);
         return 1;
     }
     else{
         if (tipo == 3){
-            uint32_t codigoRegistro = operando & 0x1F;
-            int32_t desplazamiento = (operando >> 8) & 0xFFFF;
-            desplazamiento = desplazamiento << 16;
-            desplazamiento = desplazamiento >> 16;
-            uint32_t direccionLogica = (uint32_t)vm->registros[codigoRegistro] + desplazamiento;
-            return escribirMemoria(vm, direccionLogica, 4, valor);
+            // escribirMemoria guarda los cantidadBytes menos significativos (trunca)
+            return escribirMemoria(vm, direccionOperandoMemoria(vm, operando), bytesModificador(operando), valor);
         }
         //sino operando destino invalido
         return 0;
