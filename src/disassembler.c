@@ -77,11 +77,12 @@ void disassembler(MaquinaVirtual *vm){
 
     uint8_t instruccion;
     int32_t cantOp,tipoOpA, tipoOpB, indiceMemoria, i, direccionFisica;
-    uint32_t opB, opA,pos = 0;
-    uint32_t tamanoCodigo = (uint32_t)vm->segmentos[0] & 0xFFFF;
+    uint32_t opB, opA,pos = 0;     // pos: offset dentro del Code Segment
+    uint32_t cs = (uint32_t)vm->registros[REG_CS];
+    uint32_t tamanoCodigo = (uint32_t)vm->segmentos[cs >> 16] & 0xFFFF;
     
     while(pos<tamanoCodigo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
-        direccionFisica=direccionLogicaAFisica(pos, vm->segmentos, vm->memoria.tamano);
+        direccionFisica=direccionLogicaAFisica(cs + pos, vm->segmentos, vm->memoria.tamano);
         if (direccionFisica==-1 || (uint32_t)direccionFisica>=vm->memoria.tamano){    //Condiciones de corte
             pos=tamanoCodigo;
             continue; //vuelve a chequear el while para salir
@@ -115,7 +116,7 @@ void disassembler(MaquinaVirtual *vm){
                 return;
             }
 
-            indiceMemoria=direccionLogicaAFisica(pos+1, vm->segmentos, vm->memoria.tamano); //Obtenemos el indice donde comienza el opB
+            indiceMemoria=direccionLogicaAFisica(cs + pos + 1, vm->segmentos, vm->memoria.tamano); //Obtenemos el indice donde comienza el opB
             if (indiceMemoria < 0 || (uint32_t)indiceMemoria >= vm->memoria.tamano) {
                 printf("Error: el indice se sale de la memoria\n");
                 return;

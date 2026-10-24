@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "tipos.h"
 int32_t leerOperando(MaquinaVirtual *vm, uint32_t registroOP);
-void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros, uint32_t tamMemoria);
+int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera);
 int32_t cantidadOperandosALeer(int32_t codigo);
 int32_t direccionLogicaAFisica(uint32_t direccionLogica, tSegmento segmentos, uint32_t tamMemoria);
 void procesaPrograma(MaquinaVirtual *vm);
