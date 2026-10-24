@@ -17,7 +17,7 @@ void procesaPrograma( MaquinaVirtual *vm){
     while(vm->corriendo){  // procesa mientras corriendo sea 1, cuando encuentra STOP cambia corriendo a 0 y termina la ejecucion
         vm->breakpointEjecutado = 0;
         direccionFisica=direccionLogicaAFisica(vm->registros[REG_IP], vm->segmentos, vm->memoria.tamano);
-        if (direccionFisica==-1 || (uint32_t)direccionFisica>=vm->memoria.tamano || ((uint32_t)vm->registros[REG_IP] >> 16) != 0){    //Condiciones de corte
+        if (direccionFisica==-1 || (uint32_t)direccionFisica>=vm->memoria.tamano || ((uint32_t)vm->registros[REG_IP] >> 16) != ((uint32_t)vm->registros[REG_CS] >> 16)){    //Condiciones de corte
             vm->corriendo = 0;
             continue; //vuelve a chequear el while para salir
         }
@@ -44,7 +44,7 @@ void procesaPrograma( MaquinaVirtual *vm){
             }
             
             uint32_t tamanoInstruccion = 1 + (uint32_t)tipoOpA + (uint32_t)tipoOpB;   // 1 byte del opcode + los operandos
-            uint32_t tamanoCodigo = (uint32_t)vm->segmentos[0] & 0xFFFFu;
+            uint32_t tamanoCodigo = (uint32_t)vm->segmentos[(uint32_t)vm->registros[REG_CS] >> 16] & 0xFFFFu;
             uint32_t offsetIP = (uint32_t)vm->registros[REG_IP] & 0xFFFFu;
             if (offsetIP >= tamanoCodigo || tamanoInstruccion > tamanoCodigo - offsetIP) {
                 printf("Error: instruccion incompleta\n");

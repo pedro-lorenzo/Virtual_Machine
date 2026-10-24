@@ -20,27 +20,53 @@ void liberarMemoria(Memoria *memoria){
     memoria->tamano = 0;
 }
 
-void iniciaMaquinaVirtual(Cabecera cabecera, tSegmento segmentos, tRegistro registros, uint32_t tamMemoria){
-    int32_t i;
+/* Arma la tabla de descriptores y los registros de segmento (tabla dinamica).
+   Recorre los segmentos en el orden en que van en la memoria (SEG_PARAM .. SEG_STACK):
+   cada segmento con tamano > 0 se ubica a continuacion del anterior y ocupa la
+   siguiente entrada libre de la tabla. Los que miden 0 no tienen entrada y su
+   registro queda en -1.
+     tabla[entrada]  = base fisica (16 bits altos) | tamano (16 bits bajos)
+     registro (CS..) = numero de entrada (16 bits altos) | offset 0
+   Devuelve 0 si el proceso entra en la memoria o -1 si no entra. */
+int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera){
+    // registro que apunta a cada segmento, en el mismo orden que SEG_*
+    static const int32_t regSegmento[CANT_SEG_PROCESO] = { REG_PS, REG_KS, REG_CS, REG_DS, REG_ES, REG_SS };
+    uint32_t base, entrada;
+    int32_t k, i;
 
-    segmentos[0] = cabecera.tamano;                                 //Inicia el segmento de código
-    segmentos[1] = cabecera.tamano;
-    segmentos[1]= segmentos[1] << 16;
-    segmentos[1] = segmentos[1] | (tamMemoria - cabecera.tamano);    //Inicia parte alta y baja del Segmento de datos
+    base = 0;
+    entrada = 0;
+    for (k = 0; k < CANT_SEG_PROCESO; k++){
+        if (cabecera.tamanos[k] > 0){
+            vm->segmentos[entrada] = (int32_t)((base << 16) | (cabecera.tamanos[k] & 0xFFFFu));
+            vm->registros[regSegmento[k]] = (int32_t)(entrada << 16);
+            base += cabecera.tamanos[k];
+            entrada++;
+        }
+        else
+            vm->registros[regSegmento[k]] = -1;     // segmento inexistente (0xFFFFFFFF)
+    }
+    for (i = (int32_t)entrada; i < CANT_SEGMENTOS; i++)    // entradas sin usar
+        vm->segmentos[i] = -1;
 
-    for (i=2; i<CANT_SEGMENTOS; i++)
-        segmentos[i] = -1;
+    if (base > vm->memoria.tamano){
+        printf("Error: memoria insuficiente\n");
+        return -1;
+    }
 
-    registros[REG_CS] = 0x00000000;  //Inicializacion CS
-    registros[REG_DS] = 0x00010000; //Inicializacion DS
-    registros[REG_ES] = -1;          //Segmentos inexistentes (0xFFFFFFFF)
-    registros[REG_SS] = -1;
-    registros[REG_KS] = -1;
-    registros[REG_PS] = -1;
-    registros[REG_IP] = registros[REG_CS]; //Inicializamos IP con CS
+    // IP: entrada del Code Segment en los 16 bits altos (copiada de CS) y el entry point en los bajos
+    vm->registros[REG_IP] = (int32_t)((uint32_t)vm->registros[REG_CS] | (cabecera.entryPoint & 0xFFFFu));
 
-    for (i=REG_EAX; i<=REG_EFX; i++)  //inicia los de proposito general
-        registros[i] = 0;
+    // SP: la pila arranca vacia, apuntando justo despues del final del Stack Segment
+    // (crece hacia abajo, asi que el primer PUSH le resta 4). En la version 1 no hay pila.
+    if (vm->registros[REG_SS] != -1)
+        vm->registros[REG_SP] = vm->registros[REG_SS] + (int32_t)cabecera.tamanos[SEG_STACK];
+    else
+        vm->registros[REG_SP] = 0;
+
+    for (i = REG_EAX; i <= REG_EFX; i++)  //inicia los de proposito general
+        vm->registros[i] = 0;
+    return 0;
 }
 int32_t cantidadOperandosALeer(int32_t codigo) {
     if (codigo == 0x0E || codigo == 0x0F)   // RET y STOP no tienen operandos

@@ -37,11 +37,11 @@ InstruccionFn tabla_instrucciones[32] = {
     [0x09] = ejecutarJNZ,
     [0x0A] = ejecutarNOT,
 
-    // Instrucciones invalidas
-    [0x0B] = instruccionInvalida,
-    [0x0C] = instruccionInvalida,
-    [0x0D] = instruccionInvalida,
-    [0x0E] = instruccionInvalida,
+    // Pila
+    [0x0B] = ejecutarPUSH,
+    [0x0C] = ejecutarPOP,
+    [0x0D] = ejecutarCALL,
+    [0x0E] = ejecutarRET,      // sin operandos
     
     // Dos operandos
     [0x10] = ejecutarMOV,

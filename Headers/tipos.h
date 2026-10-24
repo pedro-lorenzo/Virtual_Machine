@@ -4,9 +4,12 @@
 #include <stdint.h>
 
 #define CANT_REGISTROS 32
-#define CANT_SEGMENTOS 8
+#define CANT_SEGMENTOS 8      // entradas de la TABLA de descriptores (siempre 8)
+enum {SEG_PARAM, SEG_CONST, SEG_CODE, SEG_DATA, SEG_EXTRA, SEG_STACK };
 #define MAX_IDENTIFICADOR 5
 #define MEMORIA_KIB_DEFECTO 16
+
+#define CANT_SEG_PROCESO 6   // segmentos del proceso (SEG_PARAM .. SEG_STACK)
 
 
 typedef struct {
@@ -30,8 +33,8 @@ typedef struct {
 } MaquinaVirtual;
 
 typedef struct {
-    int8_t identificador[MAX_IDENTIFICADOR];
+    uint32_t entryPoint;          // uint32_t porque lo carga leer16
     uint8_t version;
-    uint16_t tamano;
+    uint32_t tamanos[CANT_SEG_PROCESO];   // indexado con SEG_*
 } Cabecera;
 #endif
