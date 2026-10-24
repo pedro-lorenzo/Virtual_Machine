@@ -28,10 +28,6 @@ void procesaPrograma( MaquinaVirtual *vm){
         vm->registros[REG_OP1] = 0;
         vm->registros[REG_OP2] = 0;
 
-        if (vm->registros[REG_OPC] >= 0x0B && vm->registros[REG_OPC] <= 0x0E){ //verifica si esta dentro de las operaciones invalidas.
-            instruccionInvalida(vm);
-            continue;
-        }
         cantOp= cantidadOperandosALeer(vm->registros[REG_OPC]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
             tabla_instrucciones[vm->registros[REG_OPC]](vm);

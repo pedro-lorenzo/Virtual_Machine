@@ -22,6 +22,12 @@ void ejecutarJNN(MaquinaVirtual *vm);
 void ejecutarJNZ(MaquinaVirtual *vm);
 void ejecutarNOT(MaquinaVirtual *vm);
 
+/* ---- Pila ---- */
+void ejecutarPUSH(MaquinaVirtual *vm);
+void ejecutarPOP (MaquinaVirtual *vm);
+void ejecutarCALL(MaquinaVirtual *vm);
+void ejecutarRET (MaquinaVirtual *vm);   /* sin operandos */
+
 /* ---- Dos operandos ---- */
 void ejecutarMOV (MaquinaVirtual *vm);
 void ejecutarADD (MaquinaVirtual *vm);
