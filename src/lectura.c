@@ -76,6 +76,44 @@ static int32_t copiarSegmento(FILE *f, MaquinaVirtual *vm, int32_t reg, uint32_t
     return fread(&vm->memoria.datos[base], 1, tamano, f) == tamano ? 0 : -1;
 }
 
+
+/* Tamano en bytes de los strings del Param Segment: el nombre del .vmx y cada
+   parametro, todos con su '\0'. Los punteros de argv van a continuacion. */
+static uint32_t tamanoStringsParam(const char *nombreVmx, char **params, int32_t cantidad){
+    uint32_t total;
+    int32_t i;
+
+    total = (uint32_t)strlen(nombreVmx) + 1;
+    for (i = 0; i < cantidad; i++)
+        total += (uint32_t)strlen(params[i]) + 1;
+    return total;
+}
+
+/* Arma el contenido del Param Segment: primero los strings (nombre del .vmx y
+   parametros) y al final el arreglo argv con un puntero de 4 bytes por string.
+   Cada puntero lleva el offset del string en los 16 bits bajos y 0 en los altos,
+   porque el Param Segment siempre es la entrada 0 de la tabla. */
+static void cargarParametros(MaquinaVirtual *vm, const char *nombreVmx, char **params, int32_t cantidad){
+    uint32_t base, offset, inicioArgv, largo, posicion;
+    const char *texto;
+    int32_t i;
+
+    base = (uint32_t)vm->segmentos[(uint32_t)vm->registros[REG_PS] >> 16] >> 16;
+    inicioArgv = tamanoStringsParam(nombreVmx, params, cantidad);
+    offset = 0;
+    for (i = 0; i <= cantidad; i++){
+        texto = (i == 0) ? nombreVmx : params[i - 1];
+        largo = (uint32_t)strlen(texto) + 1;
+        memcpy(&vm->memoria.datos[base + offset], texto, largo);
+        posicion = base + inicioArgv + 4 * (uint32_t)i;
+        vm->memoria.datos[posicion]     = 0;
+        vm->memoria.datos[posicion + 1] = 0;
+        vm->memoria.datos[posicion + 2] = (uint8_t)(offset >> 8);
+        vm->memoria.datos[posicion + 3] = (uint8_t)offset;
+        offset += largo;
+    }
+}
+
 #ifdef DEBUG_CARGA
 /* Para controlar la carga: compilar con -DDEBUG_CARGA */
 static void imprimirEstado(MaquinaVirtual *vm, Cabecera *cab){
@@ -93,9 +131,11 @@ static void imprimirEstado(MaquinaVirtual *vm, Cabecera *cab){
 }
 #endif
 
-static int32_t cargarVmx(MaquinaVirtual *vm, const char *nombreArchivo, uint32_t kib){
+static int32_t cargarVmx(MaquinaVirtual *vm, const char *nombreArchivo, uint32_t kib, char **params, int32_t cantParams){
     FILE *file;
     Cabecera cabecera;
+    uint32_t tamanoParam, inicioArgv;
+    int32_t argc, argv;
 
     file = fopen(nombreArchivo, "rb");
     if (file == NULL){
@@ -126,9 +166,26 @@ static int32_t cargarVmx(MaquinaVirtual *vm, const char *nombreArchivo, uint32_t
             cabecera.tamanos[SEG_DATA] = 0xFFFF;
     }
 
+    // Param Segment: solo si se pasaron parametros con -p (y la version tiene pila).
+    argc = 0;
+    argv = -1;
+    if (cantParams > 0 && cabecera.version == 2){
+        inicioArgv = tamanoStringsParam(nombreArchivo, params, cantParams);
+        tamanoParam = inicioArgv + 4 * (uint32_t)(cantParams + 1);
+        if (tamanoParam > 0xFFFF){
+            printf("Error: los parametros no entran en el Param Segment\n");
+            liberarMemoria(&vm->memoria);
+            fclose(file);
+            return -1;
+        }
+        cabecera.tamanos[SEG_PARAM] = tamanoParam;
+        argc = cantParams + 1;
+        argv = (int32_t)inicioArgv;
+    }
+
     // Primero se ubican los segmentos (tabla y registros) y recien despues se
     // copia el contenido, porque hasta no armar la tabla no se sabe donde va cada uno.
-    if (iniciaMaquinaVirtual(vm, cabecera) == -1){
+    if (iniciaMaquinaVirtual(vm, cabecera, argc, argv) == -1){
         liberarMemoria(&vm->memoria);
         fclose(file);
         return -1;
@@ -143,6 +200,10 @@ static int32_t cargarVmx(MaquinaVirtual *vm, const char *nombreArchivo, uint32_t
         return -1;
     }
     fclose(file);
+
+    if (argc > 0)
+        cargarParametros(vm, nombreArchivo, params, cantParams);
+
 #ifdef DEBUG_CARGA
     imprimirEstado(vm, &cabecera);
 #endif
@@ -155,11 +216,22 @@ int main (int argc, char *argv[]){
     else{
         MaquinaVirtual vm = {0};
         const char *archivoVmx = NULL;
-        int32_t i, mostrarDisassembler, resultado, kib;
+        int32_t i, mostrarDisassembler, resultado, kib, cantParams, finOpciones;
+        char **params;
 
         mostrarDisassembler = 0;
         kib = MEMORIA_KIB_DEFECTO;
-        for (i = 1; i < argc; i++){
+        params = NULL;
+        cantParams = 0;
+        finOpciones = argc;
+        for (i = 1; i < argc; i++)          // -p va siempre al final: todo lo que sigue son parametros
+            if (strcmp(argv[i], "-p") == 0){
+                finOpciones = i;
+                params = &argv[i + 1];
+                cantParams = argc - i - 1;
+                break;
+            }
+        for (i = 1; i < finOpciones; i++){
             if (strcmp(argv[i], "-d") == 0)
                 mostrarDisassembler = 1;
             else if (strncmp(argv[i], "m=", 2) == 0){     // m=M: tamano de la memoria en KiB
@@ -181,7 +253,7 @@ int main (int argc, char *argv[]){
         }
 
         if (archivoVmx != NULL)
-            resultado = cargarVmx(&vm, archivoVmx, (uint32_t)kib);
+            resultado = cargarVmx(&vm, archivoVmx, (uint32_t)kib, params, cantParams);
         else
             resultado = cargarImagen(&vm, vm.archivoImagen);      // sin .vmx se continua la ejecucion desde la imagen
         if (resultado == -1)

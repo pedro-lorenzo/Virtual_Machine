@@ -19,6 +19,36 @@ void liberarMemoria(Memoria *memoria){
     memoria->datos = NULL;
     memoria->tamano = 0;
 }
+/* Deja cargada la pila para la subrutina principal. Desde el tope hacia arriba:
+   direccion de retorno (-1), argc y puntero argv (-1 si no hay parametros).
+   Como la pila crece hacia abajo, se apila en orden inverso: argv, argc y retorno.
+   Devuelve 0 si pudo o -1 si el Stack Segment no tiene lugar para los 3 valores. */
+static int32_t cargarPilaPrincipal(MaquinaVirtual *vm, int32_t argc, int32_t argv){
+    int32_t valores[3];
+    int32_t i;
+    uint32_t sp, tamanoPila;
+
+    valores[0] = argv;
+    valores[1] = argc;
+    valores[2] = -1;
+
+    tamanoPila = (uint32_t)vm->segmentos[(uint32_t)vm->registros[REG_SS] >> 16] & 0xFFFFu;
+    if (tamanoPila < 12){
+        printf("Error: stack overflow\n");
+        return -1;
+    }
+    sp = (uint32_t)vm->registros[REG_SS] + tamanoPila;    // justo despues del final del Stack Segment
+    for (i = 0; i < 3; i++){
+        sp -= 4;
+        if (!escribirMemoria(vm, sp, 4, valores[i]))
+            return -1;
+    }
+    vm->registros[REG_SP] = (int32_t)sp;
+    vm->registros[REG_LAR] = 0;       // escribirMemoria los uso: se limpian para que el estado inicial quede limpio
+    vm->registros[REG_MAR] = 0;
+    vm->registros[REG_MBR] = 0;
+    return 0;
+}
 
 /* Arma la tabla de descriptores y los registros de segmento (tabla dinamica).
    Recorre los segmentos en el orden en que van en la memoria (SEG_PARAM .. SEG_STACK):
@@ -28,8 +58,7 @@ void liberarMemoria(Memoria *memoria){
      tabla[entrada]  = base fisica (16 bits altos) | tamano (16 bits bajos)
      registro (CS..) = numero de entrada (16 bits altos) | offset 0
    Devuelve 0 si el proceso entra en la memoria o -1 si no entra. */
-int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera){
-    // registro que apunta a cada segmento, en el mismo orden que SEG_*
+int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera, int32_t argc, int32_t argv){    // registro que apunta a cada segmento, en el mismo orden que SEG_*
     static const int32_t regSegmento[CANT_SEG_PROCESO] = { REG_PS, REG_KS, REG_CS, REG_DS, REG_ES, REG_SS };
     uint32_t base, entrada;
     int32_t k, i;
@@ -57,10 +86,11 @@ int32_t iniciaMaquinaVirtual(MaquinaVirtual *vm, Cabecera cabecera){
     // IP: entrada del Code Segment en los 16 bits altos (copiada de CS) y el entry point en los bajos
     vm->registros[REG_IP] = (int32_t)((uint32_t)vm->registros[REG_CS] | (cabecera.entryPoint & 0xFFFFu));
 
-    // SP: la pila arranca vacia, apuntando justo despues del final del Stack Segment
-    // (crece hacia abajo, asi que el primer PUSH le resta 4). En la version 1 no hay pila.
-    if (vm->registros[REG_SS] != -1)
-        vm->registros[REG_SP] = vm->registros[REG_SS] + (int32_t)cabecera.tamanos[SEG_STACK];
+    // Pila de la subrutina principal (en la version 1 no hay pila)
+    if (vm->registros[REG_SS] != -1){
+        if (cargarPilaPrincipal(vm, argc, argv) == -1)
+            return -1;
+    }
     else
         vm->registros[REG_SP] = 0;
 
