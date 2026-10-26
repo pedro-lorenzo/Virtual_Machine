@@ -12,6 +12,7 @@ lazo:  add eax, ecx
        sys 0xF               ; breakpoint en cada vuelta
        add ecx, 1
        cmp ecx, 6
+       sys 0
        jn lazo
        mov [ds+0], eax
        mov eax, 1

@@ -100,7 +100,7 @@ static void imprimirConstantes(MaquinaVirtual *vm){
             fin++;
         largo = fin - inicio + (fin < tamano ? 1 : 0);     // incluye el '\0' si lo tiene
 
-        printf("[%04X] ", base + inicio);
+        printf(" [%04X] ", base + inicio);
         mostrados = largo;
         if (largo > MAX_BYTES_INSTRUCCION)                   // si no entra, los primeros 6 y ".."
             mostrados = MAX_BYTES_INSTRUCCION - 1;
@@ -142,8 +142,7 @@ void disassembler(MaquinaVirtual *vm){
         vm->registros[REG_OPC]= instruccion & 0x1F;
         cantOp= cantidadOperandosALeer(vm->registros[REG_OPC]);
         if (!cantOp){             //Cuando encuentra STOP pone corriendo en 0 y termina la ejecucion
-            if (cs + pos == (uint32_t)vm->registros[REG_IP])    // entry point
-                printf(">");
+            printf("%c", cs + pos == (uint32_t)vm->registros[REG_IP] ? '>' : ' ');    // entry point
             printf("[%04X] ", direccionFisica);
             printf("%02X ", vm->memoria.datos[direccionFisica]);
             printf("%*s", 3 * (MAX_BYTES_INSTRUCCION - 1), "");
@@ -173,9 +172,7 @@ void disassembler(MaquinaVirtual *vm){
                 printf("Error: el indice se sale de la memoria\n");
                 return;
             }
-            if (cs + pos == (uint32_t)vm->registros[REG_IP])    // entry point
-                printf(">");
-                
+            printf("%c", cs + pos == (uint32_t)vm->registros[REG_IP] ? '>' : ' ');    // entry point
             printf("[%04X] ", direccionFisica);
             
 
