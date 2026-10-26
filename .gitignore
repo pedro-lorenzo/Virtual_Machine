@@ -53,3 +53,7 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Binario de la VM e imágenes generadas
+vmx
+*.vmi
