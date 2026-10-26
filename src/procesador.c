@@ -93,7 +93,7 @@ void procesaPrograma( MaquinaVirtual *vm){
             tabla_instrucciones[vm->registros[REG_OPC]](vm);
         
         }
-        if (vm->pasoAPaso && vm->corriendo && !vm->breakpointEjecutado)
+        if (vm->pasoAPaso && vm->corriendo && !vm->breakpointEjecutado && vm->registros[REG_IP] != -1)
             breakpoint(vm);
     }
 }
