@@ -46,9 +46,7 @@ void ejecutarLDL (MaquinaVirtual *vm);
 void ejecutarLDH (MaquinaVirtual *vm);
 void ejecutarRND (MaquinaVirtual *vm);
 
-/* Codigo de operacion que no existe (huecos de la tabla: 0x0B-0x0E,
-   o cualquier valor fuera de 0-31 si algun dia llegara a pasar) */
-void instruccionInvalida(MaquinaVirtual *vm);
+/* Codigo de operacion que no existe */
 
 extern InstruccionFn tabla_instrucciones[32];
 
